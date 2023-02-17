@@ -6,8 +6,8 @@ The LocationHoursPoller has two modes:
 
 ## Running locally
 * `cd` into this directory
-* Add your AWS credentials (`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`) to the config file for the environment you want to run
-  * Alternatively, you can manually export them (e.g. `export AWS_ACCESS_KEY_ID=<key>`)
+* Add your AWS profile `AWS_PROFILE` to the config file for the environment you want to run
+  * Alternatively, you can manually export it (e.g. `export AWS_PROFILE=nypl-digital-dev`)
 * Run `ENVIRONMENT=<env> python3 main.py`
   * `<env>` should be the config filename without the `.yaml` suffix. The `location_hours_<>` files run the poller in `LOCATION_HOURS` mode and the the `location_closure_alerts_<>` files run the poller in `LOCATION_CLOSURE_ALERTS` mode.
   * `make run-hours` will run the poller in `LOCATION_HOURS` mode using the development environment
@@ -16,7 +16,7 @@ The LocationHoursPoller has two modes:
 ```
 docker image build -t location-hours-poller:local .
 
-docker container run -e ENVIRONMENT=<env> -e AWS_ACCESS_KEY_ID=<aws_key> -e AWS_SECRET_ACCESS_KEY=<aws_secret_key> location-hours-poller:local
+docker container run -e ENVIRONMENT=<env> -e AWS_PROFILE=<aws_profile> location-hours-poller:local
 ```
 
 ## Git workflow
