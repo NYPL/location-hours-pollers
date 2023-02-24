@@ -1,6 +1,6 @@
+import main
 import os
 import pytest
-import main
 
 from freezegun import freeze_time
 from tests.test_helpers import TestHelpers
