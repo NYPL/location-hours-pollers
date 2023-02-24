@@ -1,7 +1,7 @@
 ---
 PLAINTEXT_VARIABLES:
     AWS_REGION: us-east-1
-    LOCATIONS_API_URL: https://refinery.nypl.org/api/nypl/locations/v1.0/locations
+    LOCATIONS_API_URL: https://qa-refinery.nypl.org/api/nypl/locations/v1.0/locations
     KINESIS_BATCH_SIZE: 500
     LOG_LEVEL: info
     MODE: LOCATION_CLOSURE_ALERTS

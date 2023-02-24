@@ -204,6 +204,23 @@ class TestMain:
         mock_kinesis_client.close.assert_called_once()
         del os.environ['MODE']
 
+    def test_poll_location_closure_alerts_with_no_alerts(
+            self, mock_avro_encoder, mock_kinesis_client, mocker):
+        os.environ['MODE'] = 'LOCATION_CLOSURE_ALERTS'
+        mocker.patch('main.load_env_file')
+        mocker.patch('main.create_log')
+
+        mock_locations_client = mocker.MagicMock()
+        mock_locations_client.query.return_value = [
+            _TEST_API_RESPONSE[0], _TEST_API_RESPONSE[3]]
+        mocker.patch('main.LocationsApiClient',
+                     return_value=mock_locations_client)
+        main.main()
+
+        mock_avro_encoder.encode_batch.assert_called_once_with(
+            [{'polling_datetime': '2023-01-01 01:23:45-05:00'}])
+        del os.environ['MODE']
+
     def test_poll_location_hours(
         self, test_instance, mock_avro_encoder, mock_kinesis_client,
             mock_redshift_client):
