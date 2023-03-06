@@ -1,6 +1,6 @@
+import main
 import os
 import pytest
-import main
 
 from freezegun import freeze_time
 from tests.test_helpers import TestHelpers
@@ -202,6 +202,23 @@ class TestMain:
         mock_kinesis_client.send_records.assert_called_once_with(
             [b'1', b'2', b'3'])
         mock_kinesis_client.close.assert_called_once()
+        del os.environ['MODE']
+
+    def test_poll_location_closure_alerts_with_no_alerts(
+            self, mock_avro_encoder, mock_kinesis_client, mocker):
+        os.environ['MODE'] = 'LOCATION_CLOSURE_ALERTS'
+        mocker.patch('main.load_env_file')
+        mocker.patch('main.create_log')
+
+        mock_locations_client = mocker.MagicMock()
+        mock_locations_client.query.return_value = [
+            _TEST_API_RESPONSE[0], _TEST_API_RESPONSE[3]]
+        mocker.patch('main.LocationsApiClient',
+                     return_value=mock_locations_client)
+        main.main()
+
+        mock_avro_encoder.encode_batch.assert_called_once_with(
+            [{'polling_datetime': '2023-01-01 01:23:45-05:00'}])
         del os.environ['MODE']
 
     def test_poll_location_hours(
