@@ -7,12 +7,12 @@ class TestHelpers:
         'AWS_REGION': 'test_aws_region',
         'LOCATIONS_API_URL': 'https://test_locations_api',
         'KINESIS_BATCH_SIZE': '2',
-        'KINESIS_STREAM_ARN': 'test_kinesis_stream',
-        'LOCATION_CLOSURE_ALERT_SCHEMA_URL':
-            'https://test_closure_alert_schema',
-        'LOCATION_HOURS_SCHEMA_URL': 'https://test_hours_schema',
+        'BASE_SCHEMA_URL': 'https://test_schema_url',
         'REDSHIFT_DB_NAME': 'test_redshift_name',
         'REDSHIFT_TABLE': 'test_redshift_table',
+        'HOURS_KINESIS_STREAM_ARN': 'test_hours_kinesis_stream',
+        'CLOSURE_ALERT_KINESIS_STREAM_ARN':
+            'test_closure_alert_kinesis_stream',
         'REDSHIFT_DB_HOST': 'test_redshift_host',
         'REDSHIFT_DB_USER': 'test_redshift_user',
         'REDSHIFT_DB_PASSWORD': 'test_redshift_password'

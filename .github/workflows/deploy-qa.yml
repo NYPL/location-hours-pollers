@@ -1,0 +1,73 @@
+name: Deploy to QA if tagged as QA release
+
+on:
+  release:
+    types: [ released ]
+  
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  check_qa_tags:
+    name: Check the release tag
+    runs-on: ubuntu-latest
+    outputs:
+      has_qa_hours_tag: ${{ steps.check-qa-hours-tag.outputs.output }}
+      has_qa_closure_alert_tag: ${{ steps.check-qa-closure-alert-tag.outputs.output }}
+    steps:
+      - name: check qa hours tag ${{ github.ref }}
+        id: check-qa-hours-tag
+        run: |
+          if [[ ${{ github.ref }} =~ refs\/tags\/(qa|qa-hours)-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "output=true" >> $GITHUB_OUTPUT
+          else
+            echo "output=false" >> $GITHUB_OUTPUT
+          fi
+      - name: check qa closure alert tag ${{ github.ref }}
+        id: check-qa-closure-alert-tag
+        run: |
+          if [[ ${{ github.ref }} =~ refs\/tags\/(qa|qa-closure-alert)-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "output=true" >> $GITHUB_OUTPUT
+          else
+            echo "output=false" >> $GITHUB_OUTPUT
+          fi
+  publish_qa:
+    needs: [ check_qa_tags ]
+    if: needs.check_qa_tags.outputs.has_qa_hours_tag == 'true' || needs.check_qa_tags.outputs.has_qa_closure_alert_tag == 'true'
+    name: Publish image to ECR and update ECS service(s)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          role-to-assume: arn:aws:iam::946183545209:role/GithubActionsDeployerRole
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: location-hours
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:qa-latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:qa-latest
+      
+      - name: Force ECS hours update
+        if: needs.check_qa_tags.outputs.has_qa_hours_tag == 'true'
+        run: |
+          aws ecs update-service --cluster location-hours-poller-qa --service location-hours-poller-qa --force-new-deployment
+      
+      - name: Force ECS closure alert update
+        if: needs.check_qa_tags.outputs.has_qa_closure_alert_tag == 'true'
+        run: |
+          aws ecs update-service --cluster location-closure-alert-poller-qa --service location-closure-alert-poller-qa --force-new-deployment

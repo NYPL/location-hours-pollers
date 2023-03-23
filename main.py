@@ -4,7 +4,9 @@ import pytz
 from datetime import datetime
 from lib import LocationsApiClient
 from lib.query_helper import build_location_hours_redshift_query
-from nypl_py_utils import AvroEncoder, KinesisClient, RedshiftClient
+from nypl_py_utils.classes.avro_encoder import AvroEncoder
+from nypl_py_utils.classes.kinesis_client import KinesisClient
+from nypl_py_utils.classes.redshift_client import RedshiftClient
 from nypl_py_utils.functions.config_helper import load_env_file
 from nypl_py_utils.functions.log_helper import create_log
 
@@ -20,7 +22,7 @@ def main():
 
     if os.environ['MODE'] == 'LOCATION_HOURS':
         poll_location_hours(logger)
-    elif os.environ['MODE'] == 'LOCATION_CLOSURE_ALERTS':
+    elif os.environ['MODE'] == 'LOCATION_CLOSURE_ALERT':
         poll_location_closure_alerts(logger)
     else:
         logger.error('Mode not recognized: {}'.format(os.environ['MODE']))
@@ -30,8 +32,8 @@ def main():
 
 def poll_location_hours(logger):
     locations_api_client = LocationsApiClient()
-    avro_encoder = AvroEncoder(os.environ['LOCATION_HOURS_SCHEMA_URL'])
-    kinesis_client = KinesisClient(os.environ['KINESIS_STREAM_ARN'],
+    avro_encoder = AvroEncoder(os.environ['BASE_SCHEMA_URL'] + 'LocationHours')
+    kinesis_client = KinesisClient(os.environ['HOURS_KINESIS_STREAM_ARN'],
                                    int(os.environ['KINESIS_BATCH_SIZE']))
 
     # Get today's date and day of the week. The Refinery weekday contains a
@@ -84,9 +86,11 @@ def poll_location_hours(logger):
 
 def poll_location_closure_alerts(logger):
     locations_api_client = LocationsApiClient()
-    avro_encoder = AvroEncoder(os.environ['LOCATION_CLOSURE_ALERT_SCHEMA_URL'])
-    kinesis_client = KinesisClient(os.environ['KINESIS_STREAM_ARN'],
-                                   int(os.environ['KINESIS_BATCH_SIZE']))
+    avro_encoder = AvroEncoder(
+        os.environ['BASE_SCHEMA_URL'] + 'LocationClosureAlert')
+    kinesis_client = KinesisClient(
+        os.environ['CLOSURE_ALERT_KINESIS_STREAM_ARN'],
+        int(os.environ['KINESIS_BATCH_SIZE']))
 
     # Query the API for every alert marked as a closure and construct a record
     # for each one
