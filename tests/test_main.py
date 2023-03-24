@@ -194,7 +194,7 @@ class TestMain:
 
     def test_poll_location_closure_alerts(
             self, test_instance, mock_avro_encoder, mock_kinesis_client):
-        os.environ['MODE'] = 'LOCATION_CLOSURE_ALERTS'
+        os.environ['MODE'] = 'LOCATION_CLOSURE_ALERT'
         main.main()
 
         mock_avro_encoder.encode_batch.assert_called_once_with(
@@ -206,7 +206,7 @@ class TestMain:
 
     def test_poll_location_closure_alerts_with_no_alerts(
             self, mock_avro_encoder, mock_kinesis_client, mocker):
-        os.environ['MODE'] = 'LOCATION_CLOSURE_ALERTS'
+        os.environ['MODE'] = 'LOCATION_CLOSURE_ALERT'
         mocker.patch('main.load_env_file')
         mocker.patch('main.create_log')
 

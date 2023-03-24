@@ -5,19 +5,21 @@ help:
 	@echo "    display this help statement"
 	@echo "make run-hours"
 	@echo "    run the application in location hours mode in devel"
-	@echo "make run-closure-alerts"
-	@echo "    run the application in location closure alerts mode in devel"
+	@echo "make run-closure-alert"
+	@echo "    run the application in location closure alert mode in devel"
 	@echo "make test"
 	@echo "    run associated test suite with pytest"
 	@echo "make lint"
 	@echo "    lint project files using the flake8 linter"
 
 run-hours:
-	export ENVIRONMENT=location_hours_devel; \
+	export ENVIRONMENT=devel; \
+	export MODE=LOCATION_HOURS; \
 	python3 main.py
 
-run-closure-alerts:
-	export ENVIRONMENT=location_closure_alerts_devel; \
+run-closure-alert:
+	export ENVIRONMENT=devel; \
+	export MODE=LOCATION_CLOSURE_ALERT; \
 	python3 main.py
 
 test:
