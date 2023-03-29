@@ -113,7 +113,8 @@ def poll_location_closure_alerts(logger):
     # If there are no alerts, still record the datetime of the polling, as it
     # may still be required by the LocationClosureAggregator
     if len(records) == 0:
-        records.append({'polling_datetime': str(polling_datetime)})
+        records.append({'drupal_location_id': 'location_closure_alert_poller',
+                       'polling_datetime': str(polling_datetime)})
     encoded_records = avro_encoder.encode_batch(records)
     kinesis_client.send_records(encoded_records)
     kinesis_client.close()

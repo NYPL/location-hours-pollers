@@ -218,7 +218,8 @@ class TestMain:
         main.main()
 
         mock_avro_encoder.encode_batch.assert_called_once_with(
-            [{'polling_datetime': '2023-01-01 01:23:45-05:00'}])
+            [{'drupal_location_id': 'location_closure_alert_poller',
+              'polling_datetime': '2023-01-01 01:23:45-05:00'}])
         del os.environ['MODE']
 
     def test_poll_location_hours(
