@@ -79,7 +79,8 @@ def poll_location_hours(logger):
                 'close': api_hours['close'],
                 'date_of_change': str(today)})
     encoded_records = avro_encoder.encode_batch(records)
-    kinesis_client.send_records(encoded_records)
+    if os.environ.get('IGNORE_KINESIS', False) != 'True':
+        kinesis_client.send_records(encoded_records)
     kinesis_client.close()
     logger.info('Finished location hours poll')
 
@@ -116,7 +117,8 @@ def poll_location_closure_alerts(logger):
         records.append({'drupal_location_id': 'location_closure_alert_poller',
                        'polling_datetime': str(polling_datetime)})
     encoded_records = avro_encoder.encode_batch(records)
-    kinesis_client.send_records(encoded_records)
+    if os.environ.get('IGNORE_KINESIS', False) != 'True':
+        kinesis_client.send_records(encoded_records)
     kinesis_client.close()
     logger.info('Finished location closure alerts poll')
 
