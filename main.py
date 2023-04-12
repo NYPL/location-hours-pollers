@@ -107,7 +107,8 @@ def poll_location_closure_alerts(logger):
                     'alert_id': alert['id'],
                     'closed_for': alert.get('closed_for', None),
                     'extended_closing': alert['extended_closing'] == 'true',
-                    'alert_start': ' '.join(alert['applies']['start'].split('T')),
+                    'alert_start': ' '.join(
+                        alert['applies']['start'].split('T')),
                     'alert_end': ' '.join(alert['applies']['end'].split('T')),
                     'polling_datetime': str(polling_datetime)})
 
