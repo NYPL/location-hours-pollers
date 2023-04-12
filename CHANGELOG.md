@@ -1,6 +1,10 @@
+## 2023-04-12 -- v0.0.4
+### Added
+- Updated output records to use new LocationHours and LocationClosureAlert schema fields
+
 ## 2023-03-23 -- v0.0.3
 ### Added
-- Addd Github Actions workflows for deployment
+- Added Github Actions workflows for deployment
 
 ## 2023-02-24 -- v0.0.2
 ### Fixed
