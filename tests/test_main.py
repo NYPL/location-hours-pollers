@@ -94,8 +94,8 @@ _AVRO_ALERTS_INPUT = [
         'alert_id': '123',
         'closed_for': 'temporary closure 1',
         'extended_closing': False,
-        'start': '2022-12-31T00:00:00-05:00',
-        'end': '2023-01-31T00:00:00-05:00',
+        'alert_start': '2022-12-31 00:00:00-05:00',
+        'alert_end': '2023-01-31 00:00:00-05:00',
         'polling_datetime': '2023-01-01 01:23:45-05:00'
     },
     {
@@ -104,8 +104,8 @@ _AVRO_ALERTS_INPUT = [
         'alert_id': '456',
         'closed_for': 'temporary closure 2',
         'extended_closing': False,
-        'start': '2023-01-01T00:00:00-05:00',
-        'end': '2023-01-01T12:00:00-05:00',
+        'alert_start': '2023-01-01 00:00:00-05:00',
+        'alert_end': '2023-01-01 12:00:00-05:00',
         'polling_datetime': '2023-01-01 01:23:45-05:00'
     },
     {
@@ -114,8 +114,8 @@ _AVRO_ALERTS_INPUT = [
         'alert_id': '012',
         'closed_for': None,
         'extended_closing': True,
-        'start': '2022-12-31T00:00:00-05:00',
-        'end': '2023-02-31T00:00:00-05:00',
+        'alert_start': '2022-12-31 00:00:00-05:00',
+        'alert_end': '2023-02-31 00:00:00-05:00',
         'polling_datetime': '2023-01-01 01:23:45-05:00'
     }
 ]
@@ -125,24 +125,24 @@ _AVRO_HOURS_INPUT = [
         'drupal_location_id': 'liba',
         'name': 'library a',
         'weekday': 'Sun',
-        'open': '09:00',
-        'close': '15:00',
+        'regular_open': '09:00',
+        'regular_close': '15:00',
         'date_of_change': '2023-01-01'
     },
     {
         'drupal_location_id': 'libc',
         'name': 'library c',
         'weekday': 'Sun',
-        'open': '13:00',
-        'close': '19:00',
+        'regular_open': '13:00',
+        'regular_close': '19:00',
         'date_of_change': '2023-01-01'
     },
     {
         'drupal_location_id': 'libd',
         'name': 'library d',
         'weekday': 'Sun',
-        'open': None,
-        'close': None,
+        'regular_open': None,
+        'regular_close': None,
         'date_of_change': '2023-01-01'
     }
 ]
