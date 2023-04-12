@@ -75,8 +75,8 @@ def poll_location_hours(logger):
                 'drupal_location_id': location['id'],
                 'name': location['name'],
                 'weekday': redshift_weekday,
-                'open': api_hours['open'],
-                'close': api_hours['close'],
+                'regular_open': api_hours['open'],
+                'regular_close': api_hours['close'],
                 'date_of_change': str(today)})
     encoded_records = avro_encoder.encode_batch(records)
     if os.environ.get('IGNORE_KINESIS', False) != 'True':
@@ -107,8 +107,9 @@ def poll_location_closure_alerts(logger):
                     'alert_id': alert['id'],
                     'closed_for': alert.get('closed_for', None),
                     'extended_closing': alert['extended_closing'] == 'true',
-                    'start': alert['applies']['start'],
-                    'end': alert['applies']['end'],
+                    'alert_start': ' '.join(
+                        alert['applies']['start'].split('T')),
+                    'alert_end': ' '.join(alert['applies']['end'].split('T')),
                     'polling_datetime': str(polling_datetime)})
 
     # If there are no alerts, still record the datetime of the polling, as it
