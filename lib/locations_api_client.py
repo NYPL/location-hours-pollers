@@ -2,6 +2,7 @@ import os
 import requests
 
 from nypl_py_utils.functions.log_helper import create_log
+from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import JSONDecodeError, RequestException
 
 
@@ -11,11 +12,18 @@ class LocationsApiClient:
     def __init__(self):
         self.logger = create_log('locations_api_client')
         self.url = os.environ['LOCATIONS_API_URL']
+        
+        retry_policy = Retry(total=3, backoff_factor=5,
+                             status_forcelist=[500, 502, 503, 504])
+        self.session = requests.Session()
+        self.session.mount('https://', HTTPAdapter(max_retries=retry_policy))
+
 
     def query(self):
         self.logger.debug('Querying {}'.format(self.url))
+        
         try:
-            response = requests.get(self.url)
+            response = self.session.get(self.url)
             response.raise_for_status()
         except RequestException as e:
             self.logger.error(
