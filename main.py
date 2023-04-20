@@ -53,8 +53,10 @@ def poll_location_hours(logger):
     raw_redshift_data = redshift_client.execute_query(
         build_location_hours_redshift_query(redshift_weekday))
     redshift_client.close_connection()
-    redshift_dict = {row[0]: (str(row[1]), str(row[2]))
-                     for row in raw_redshift_data}
+    redshift_dict = {row[0]: (
+        str(row[1])[:-3] if row[1] is not None else row[1],
+        str(row[2])[:-3] if row[1] is not None else row[2])
+        for row in raw_redshift_data}
 
     logger.info('Polling Refinery for regular location hours')
     records = []
