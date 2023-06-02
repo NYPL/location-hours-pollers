@@ -1,3 +1,7 @@
+## 2023-06-02 -- v1.0.0
+### Added
+- Log a warning if the earliest library opening and/or the latest library closing changes
+
 ## 2023-04-12 -- v0.0.4
 ### Added
 - Updated output records to use new LocationHours and LocationClosureAlert schema fields
