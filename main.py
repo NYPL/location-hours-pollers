@@ -57,6 +57,10 @@ def poll_location_hours(logger):
         str(row[1])[:-3] if row[1] is not None else row[1],
         str(row[2])[:-3] if row[1] is not None else row[2])
         for row in raw_redshift_data}
+    redshift_earliest_open = min(
+        hours[0] for hours in redshift_dict.values() if hours[0] is not None)
+    redshift_latest_close = max(
+        hours[1] for hours in redshift_dict.values() if hours[1] is not None)
 
     logger.info('Polling Refinery for regular location hours')
     records = []
@@ -80,6 +84,18 @@ def poll_location_hours(logger):
                 'regular_open': api_hours['open'],
                 'regular_close': api_hours['close'],
                 'date_of_change': str(today)})
+            if (api_hours['open'] is not None
+                    and api_hours['open'] < redshift_earliest_open):
+                logger.warning(
+                    ('Earliest opening time changed: was {old_open} and is '
+                     'now {new_open}').format(old_open=redshift_earliest_open,
+                                              new_open=api_hours['open']))
+            if (api_hours['close'] is not None
+                    and api_hours['close'] > redshift_latest_close):
+                logger.warning(
+                    ('Latest closing time changed: was {old_close} and is now '
+                     '{new_close}').format(old_close=redshift_latest_close,
+                                           new_close=api_hours['close']))
     encoded_records = avro_encoder.encode_batch(records)
     if os.environ.get('IGNORE_KINESIS', False) != 'True':
         kinesis_client.send_records(encoded_records)
