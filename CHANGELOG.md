@@ -1,3 +1,7 @@
+## 2023-06-05 -- v1.0.1
+### Fixed
+- Fixed production ECS cluster/service names in deploy-production GitHub workflow
+
 ## 2023-06-02 -- v1.0.0
 ### Added
 - Log a warning if the earliest library opening and/or the latest library closing changes

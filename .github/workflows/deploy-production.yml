@@ -65,9 +65,9 @@ jobs:
       - name: Force ECS hours update
         if: needs.check_production_tags.outputs.has_production_hours_tag == 'true'
         run: |
-          aws ecs update-service --cluster location-hours-poller-production --service location-hours-poller-production --force-new-deployment
+          aws ecs update-service --cluster location-hours-poller-prod --service location-hours-poller-prod --force-new-deployment
       
       - name: Force ECS closure alert update
         if: needs.check_production_tags.outputs.has_production_closure_alert_tag == 'true'
         run: |
-          aws ecs update-service --cluster location-closure-alert-poller-production --service location-closure-alert-poller-production --force-new-deployment
+          aws ecs update-service --cluster location-closure-alert-poller-prod --service location-closure-alert-poller-prod --force-new-deployment
