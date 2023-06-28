@@ -4,8 +4,7 @@ PLAINTEXT_VARIABLES:
     LOCATIONS_API_URL: https://qa-refinery.nypl.org/api/nypl/locations/v1.0/locations
     KINESIS_BATCH_SIZE: 200
     BASE_SCHEMA_URL: https://qa-platform.nypl.org/api/v0.1/current-schemas/
-    REDSHIFT_DB_NAME: dev
-    REDSHIFT_TABLE: location_hours_dev
+    REDSHIFT_DB_NAME: qa
     LOG_LEVEL: info
     IGNORE_KINESIS: True
 ENCRYPTED_VARIABLES:

@@ -2,6 +2,7 @@ import main
 import os
 import pytest
 
+from datetime import time
 from freezegun import freeze_time
 from tests.test_helpers import TestHelpers
 
@@ -81,10 +82,10 @@ _TEST_API_RESPONSE = [
 ]
 
 _TEST_REDSHIFT_RESPONSE = [
-    ('liba', '09:00:00', '10:00:00'),
-    ('libb', '11:00:00', '17:00:00'),
-    ('libc', '18:00:00', '19:00:00'),
-    ('libe', '19:00:00', '20:00:00')
+    ('liba', time(9, 0), time(10, 0)),
+    ('libb', time(11, 0), time(17, 0)),
+    ('libc', time(18, 0), time(19, 0)),
+    ('libe', time(19, 0), time(20, 0))
 ]
 
 _AVRO_ALERTS_INPUT = [

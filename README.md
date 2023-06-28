@@ -53,8 +53,7 @@ Note that the QA and production env files are actually read by the deployed serv
 | `LOCATIONS_API_URL` | API endpoint to which the poller sends location requests |
 | `KINESIS_BATCH_SIZE` | How many records should be sent to Kinesis at once. Kinesis supports up to 500 records per batch. |
 | `BASE_SCHEMA_URL` | Base URL for the Platform API endpoint from which to retrieve the Avro schemas |
-| `REDSHIFT_DB_NAME` | Which Redshift database to query (either `dev`, `qa`, or `production`). Only used in `LOCATION_HOURS` mode. |
-| `REDSHIFT_TABLE` | Which Redshift table to query. Only used in `LOCATION_HOURS` mode. |
+| `REDSHIFT_DB_NAME` | Which Redshift database to query (either `qa` or `production`). Only used in `LOCATION_HOURS` mode. |
 | `LOG_LEVEL` (optional) | What level of logs should be output. Set to `info` by default. |
 | `HOURS_KINESIS_STREAM_ARN` | Encrypted ARN for the Kinesis stream the poller sends the encoded hours data to in `LOCATION_HOURS` mode |
 | `CLOSURE_ALERT_KINESIS_STREAM_ARN` | Encrypted ARN for the Kinesis stream the poller sends the encoded alert data to in `LOCATION_CLOSURE_ALERT` mode |
