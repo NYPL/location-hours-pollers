@@ -49,13 +49,16 @@ def poll_location_hours(logger):
         os.environ['REDSHIFT_DB_NAME'],
         os.environ['REDSHIFT_DB_USER'],
         os.environ['REDSHIFT_DB_PASSWORD'])
+    redshift_table = 'location_hours'
+    if os.environ['REDSHIFT_DB_NAME'] != 'production':
+        redshift_table += ('_' + os.environ['REDSHIFT_DB_NAME'])
     redshift_client.connect()
     raw_redshift_data = redshift_client.execute_query(
-        build_location_hours_redshift_query(redshift_weekday))
+        build_location_hours_redshift_query(redshift_table, redshift_weekday))
     redshift_client.close_connection()
     redshift_dict = {row[0]: (
-        str(row[1])[:-3] if row[1] is not None else row[1],
-        str(row[2])[:-3] if row[1] is not None else row[2])
+        row[1].isoformat()[:-3] if row[1] is not None else row[1],
+        row[2].isoformat()[:-3] if row[1] is not None else row[2])
         for row in raw_redshift_data}
     redshift_earliest_open = min(
         hours[0] for hours in redshift_dict.values() if hours[0] is not None)
@@ -83,7 +86,7 @@ def poll_location_hours(logger):
                 'weekday': redshift_weekday,
                 'regular_open': api_hours['open'],
                 'regular_close': api_hours['close'],
-                'date_of_change': str(today)})
+                'date_of_change': today.isoformat()})
             if (api_hours['open'] is not None
                     and api_hours['open'] < redshift_earliest_open):
                 logger.warning(
@@ -115,7 +118,7 @@ def poll_location_closure_alerts(logger):
     # for each one
     logger.info('Polling Refinery for location closure alerts')
     records = []
-    polling_datetime = datetime.now(_TIMEZONE)
+    polling_datetime = datetime.now(_TIMEZONE).isoformat(sep=' ')
     for location in locations_api_client.query():
         for alert in location['_embedded'].get('alerts', []):
             if alert['extended_closing'] == 'true' or 'closed_for' in alert:
@@ -128,13 +131,13 @@ def poll_location_closure_alerts(logger):
                     'alert_start': ' '.join(
                         alert['applies']['start'].split('T')),
                     'alert_end': ' '.join(alert['applies']['end'].split('T')),
-                    'polling_datetime': str(polling_datetime)})
+                    'polling_datetime': polling_datetime})
 
     # If there are no alerts, still record the datetime of the polling, as it
     # may still be required by the LocationClosureAggregator
     if len(records) == 0:
         records.append({'drupal_location_id': 'location_closure_alert_poller',
-                       'polling_datetime': str(polling_datetime)})
+                       'polling_datetime': polling_datetime})
     encoded_records = avro_encoder.encode_batch(records)
     if os.environ.get('IGNORE_KINESIS', False) != 'True':
         kinesis_client.send_records(encoded_records)

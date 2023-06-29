@@ -1,5 +1,3 @@
-import os
-
 _LOCATION_HOURS_REDSHIFT_QUERY = '''
     SELECT
         {redshift_table}.drupal_location_id,
@@ -19,7 +17,6 @@ _LOCATION_HOURS_REDSHIFT_QUERY = '''
     WHERE {redshift_table}.weekday = '{weekday}';'''
 
 
-def build_location_hours_redshift_query(weekday):
+def build_location_hours_redshift_query(redshift_table, weekday):
     return _LOCATION_HOURS_REDSHIFT_QUERY.format(
-        redshift_table=os.environ['REDSHIFT_TABLE'],
-        weekday=weekday)
+        redshift_table=redshift_table, weekday=weekday)

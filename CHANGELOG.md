@@ -1,3 +1,9 @@
+## 2023-06-28 -- v1.0.2
+### Fixed
+- Updated `configure-aws-credentials` GitHub action version
+- Updated `nypl-py-utils` version
+- Explicitly use ISO 8601 format for dates and times
+
 ## 2023-06-05 -- v1.0.1
 ### Fixed
 - Fixed production ECS cluster/service names in deploy-production GitHub workflow
