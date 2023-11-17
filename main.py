@@ -72,7 +72,8 @@ def poll_location_hours(logger):
             lambda daily_hours: daily_hours['day'] == api_weekday,
             location['hours']['regular']))
         redshift_hours = redshift_dict.get(location['id'], None)
-        if redshift_hours is None:
+        if (redshift_hours is None
+                and os.environ['ENVIRONMENT'] == 'production'):
             logger.warning('New location id found: {}'.format(location['id']))
 
         # Check today's regular hours in Redshift against today's regular hours

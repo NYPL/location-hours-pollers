@@ -1,3 +1,7 @@
+## 2023-11-17 -- v1.0.3
+### Fixed
+- Do not log a warning for new locations in QA
+
 ## 2023-06-28 -- v1.0.2
 ### Fixed
 - Updated `configure-aws-credentials` GitHub action version
