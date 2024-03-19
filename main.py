@@ -60,7 +60,7 @@ def poll_location_hours(logger):
         row[1].isoformat()[:-3] if row[1] is not None else row[1],
         row[2].isoformat()[:-3] if row[1] is not None else row[2])
         for row in raw_redshift_data}
-    
+
     # Determine the earliest open and latest close or use placeholders if all
     # libraries are closed on that day (Sundays)
     opening_hours = set(
