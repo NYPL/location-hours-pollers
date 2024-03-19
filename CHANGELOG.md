@@ -1,3 +1,8 @@
+## 2024-03-19 -- v1.0.4
+### Fixed
+- If all libraries are closed on a day (Sundays), use a placeholder for the earliest
+opening/latest closing instead of throwing an error
+
 ## 2023-11-17 -- v1.0.3
 ### Fixed
 - Do not log a warning for new locations in QA
