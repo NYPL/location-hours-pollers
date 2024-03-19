@@ -39,7 +39,7 @@ def poll_location_hours(logger):
     # Get today's date and day of the week. The Refinery weekday contains a
     # period and the Redshift weekday does not.
     today = datetime.now(_TIMEZONE).date()
-    api_weekday = 'Sun.'  # _WEEKDAY_MAP[today.weekday()]
+    api_weekday = _WEEKDAY_MAP[today.weekday()]
     redshift_weekday = api_weekday.rstrip('.')
 
     # Query Redshift for all of the currently stored regular hours for today's
