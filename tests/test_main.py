@@ -81,12 +81,17 @@ _TEST_API_RESPONSE = [
     }
 ]
 
+_TEST_API_RESPONSE_ALL_CLOSED = [_TEST_API_RESPONSE[0], _TEST_API_RESPONSE[3]]
+
 _TEST_REDSHIFT_RESPONSE = [
     ('liba', time(9, 0), time(10, 0)),
     ('libb', time(11, 0), time(17, 0)),
     ('libc', time(18, 0), time(19, 0)),
     ('libe', time(19, 0), time(20, 0))
 ]
+
+_TEST_REDSHIFT_RESPONSE_ALL_CLOSED = [('liba', None, None),
+                                      ('libd', None, None)]
 
 _AVRO_ALERTS_INPUT = [
     {
@@ -148,6 +153,8 @@ _AVRO_HOURS_INPUT = [
     }
 ]
 
+_AVRO_HOURS_INPUT_ALL_CLOSED = [_AVRO_HOURS_INPUT[0]]
+
 
 @freeze_time('2023-01-01 01:23:45-05:00')
 class TestMain:
@@ -166,11 +173,6 @@ class TestMain:
         mocker.patch('main.create_log')
         mocker.patch('main.build_location_hours_redshift_query',
                      return_value='REDSHIFT QUERY')
-
-        mock_locations_client = mocker.MagicMock()
-        mock_locations_client.query.return_value = _TEST_API_RESPONSE
-        mocker.patch('main.LocationsApiClient',
-                     return_value=mock_locations_client)
 
     @pytest.fixture
     def mock_avro_encoder(self, mocker):
@@ -194,8 +196,15 @@ class TestMain:
         return mock_redshift_client
 
     def test_poll_location_closure_alerts(
-            self, test_instance, mock_avro_encoder, mock_kinesis_client):
+            self, test_instance, mock_avro_encoder, mock_kinesis_client,
+            mocker):
         os.environ['MODE'] = 'LOCATION_CLOSURE_ALERT'
+
+        mock_locations_client = mocker.MagicMock()
+        mock_locations_client.query.return_value = _TEST_API_RESPONSE
+        mocker.patch('main.LocationsApiClient',
+                     return_value=mock_locations_client)
+
         main.main()
 
         mock_avro_encoder.encode_batch.assert_called_once_with(
@@ -224,9 +233,15 @@ class TestMain:
         del os.environ['MODE']
 
     def test_poll_location_hours(
-        self, test_instance, mock_avro_encoder, mock_kinesis_client,
-            mock_redshift_client):
+            self, test_instance, mock_avro_encoder, mock_kinesis_client,
+            mock_redshift_client, mocker):
         os.environ['MODE'] = 'LOCATION_HOURS'
+
+        mock_locations_client = mocker.MagicMock()
+        mock_locations_client.query.return_value = _TEST_API_RESPONSE
+        mocker.patch('main.LocationsApiClient',
+                     return_value=mock_locations_client)
+
         main.main()
 
         mock_redshift_client.connect.assert_called_once()
@@ -238,6 +253,28 @@ class TestMain:
         mock_kinesis_client.send_records.assert_called_once_with(
             [b'1', b'2', b'3'])
         mock_kinesis_client.close.assert_called_once()
+        del os.environ['MODE']
+
+    def test_poll_location_hours_all_closed(
+            self, test_instance, mock_avro_encoder, mock_kinesis_client,
+            mocker):
+        os.environ['MODE'] = 'LOCATION_HOURS'
+
+        mock_locations_client = mocker.MagicMock()
+        mock_locations_client.query.return_value = \
+            _TEST_API_RESPONSE_ALL_CLOSED
+        mocker.patch('main.LocationsApiClient',
+                     return_value=mock_locations_client)
+
+        mock_redshift_client = mocker.MagicMock()
+        mock_redshift_client.execute_query.return_value = \
+            _TEST_REDSHIFT_RESPONSE_ALL_CLOSED
+        mocker.patch('main.RedshiftClient', return_value=mock_redshift_client)
+
+        main.main()
+
+        mock_avro_encoder.encode_batch.assert_called_once_with(
+            _AVRO_HOURS_INPUT_ALL_CLOSED)
         del os.environ['MODE']
 
     def test_unknown_mode(self, test_instance):
