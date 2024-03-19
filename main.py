@@ -60,10 +60,15 @@ def poll_location_hours(logger):
         row[1].isoformat()[:-3] if row[1] is not None else row[1],
         row[2].isoformat()[:-3] if row[1] is not None else row[2])
         for row in raw_redshift_data}
-    redshift_earliest_open = min(
+
+    # Determine the earliest open and latest close or use placeholders if all
+    # libraries are closed on that day (Sundays)
+    opening_hours = set(
         hours[0] for hours in redshift_dict.values() if hours[0] is not None)
-    redshift_latest_close = max(
+    closing_hours = set(
         hours[1] for hours in redshift_dict.values() if hours[1] is not None)
+    redshift_earliest_open = min(opening_hours) if opening_hours else "25:00"
+    redshift_latest_close = max(closing_hours) if closing_hours else "00:00"
 
     logger.info('Polling Refinery for regular location hours')
     records = []
