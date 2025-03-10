@@ -4,7 +4,7 @@ import pytz
 from datetime import datetime
 from lib import LocationsApiClient
 from lib.query_helper import build_location_hours_redshift_query
-from nypl_py_utils.classes.avro_encoder import AvroEncoder
+from nypl_py_utils.classes.avro_client import AvroEncoder
 from nypl_py_utils.classes.kinesis_client import KinesisClient
 from nypl_py_utils.classes.redshift_client import RedshiftClient
 from nypl_py_utils.functions.config_helper import load_env_file

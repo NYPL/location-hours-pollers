@@ -1,4 +1,5 @@
 import json
+import os
 import pytest
 
 from lib import LocationsApiClient, LocationsApiClientError
@@ -56,9 +57,11 @@ class TestLocationsApiClient:
         assert test_instance.query() == _TEST_API_RESPONSE['locations']
 
     def test_query_request_error(self, test_instance, requests_mock):
+        os.environ['ENVIRONMENT'] = 'production'
         requests_mock.get('https://test_locations_api', exc=ConnectTimeout)
         with pytest.raises(LocationsApiClientError):
             test_instance.query()
+        del os.environ['ENVIRONMENT']
 
     def test_query_bad_json_error(self, test_instance, requests_mock):
         requests_mock.get('https://test_locations_api', text='bad json')

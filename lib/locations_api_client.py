@@ -1,5 +1,6 @@
 import os
 import requests
+import sys
 
 from nypl_py_utils.functions.log_helper import create_log
 from requests.adapters import HTTPAdapter, Retry
@@ -25,12 +26,18 @@ class LocationsApiClient:
             response = self.session.get(self.url)
             response.raise_for_status()
         except RequestException as e:
-            self.logger.error(
-                'Failed to retrieve response from {url}: {error}'.format(
-                    url=self.url, error=e))
-            raise LocationsApiClientError(
-                'Failed to retrieve response from {url}: {error}'.format(
-                    url=self.url, error=e)) from None
+            if os.environ['ENVIRONMENT'] == 'production':
+                self.logger.error(
+                    'Failed to retrieve response from {url}: {error}'.format(
+                        url=self.url, error=e))
+                raise LocationsApiClientError(
+                    'Failed to retrieve response from {url}: {error}'.format(
+                        url=self.url, error=e)) from None
+            else:
+                self.logger.info(
+                    'Failed to retrieve response from {url}'.format(
+                        url=self.url))
+                sys.exit()
 
         try:
             json_response = response.json()

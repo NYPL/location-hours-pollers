@@ -1,3 +1,7 @@
+## 2025-03-10 -- v1.0.5
+### Fixed
+- Do not log an error when QA Refinery is down
+
 ## 2024-03-19 -- v1.0.4
 ### Fixed
 - If all libraries are closed on a day (Sundays), use a placeholder for the earliest
