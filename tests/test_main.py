@@ -8,155 +8,166 @@ from tests.test_helpers import TestHelpers
 
 _TEST_API_RESPONSE = [
     {
-        'id': 'liba',
-        'name': 'library a',
-        'hours': {'regular': [
-            {'day': 'Sun.', 'open': '09:00', 'close': '15:00'},
-            {'day': 'Mon.', 'open': '10:00', 'close': '16:00'}
-        ]},
-        '_embedded': {}
+        "id": "liba",
+        "name": "library a",
+        "hours": {
+            "regular": [
+                {"day": "Sun.", "open": "09:00", "close": "15:00"},
+                {"day": "Mon.", "open": "10:00", "close": "16:00"},
+            ]
+        },
+        "_embedded": {},
     },
     {
-        'id': 'libb',
-        'name': 'library b',
-        'hours': {'regular': [
-            {'day': 'Sun.', 'open': '11:00', 'close': '17:00'},
-            {'day': 'Mon.', 'open': '12:00', 'close': '18:00'}
-        ]},
-        '_embedded': {'alerts': [
-            {
-                'id': '123',
-                'closed_for': 'temporary closure 1',
-                'extended_closing': None,
-                'applies': {
-                    'start': '2022-12-31T00:00:00-05:00',
-                    'end': '2023-01-31T00:00:00-05:00'
-                }
-            },
-            {
-                'id': '456',
-                'closed_for': 'temporary closure 2',
-                'extended_closing': 'false',
-                'applies': {
-                    'start': '2023-01-01T00:00:00-05:00',
-                    'end': '2023-01-01T12:00:00-05:00'
-                }
-            },
-        ]}
+        "id": "libb",
+        "name": "library b",
+        "hours": {
+            "regular": [
+                {"day": "Sun.", "open": "11:00", "close": "17:00"},
+                {"day": "Mon.", "open": "12:00", "close": "18:00"},
+            ]
+        },
+        "_embedded": {
+            "alerts": [
+                {
+                    "id": "123",
+                    "closed_for": "temporary closure 1",
+                    "extended_closing": None,
+                    "applies": {
+                        "start": "2022-12-31T00:00:00-05:00",
+                        "end": "2023-01-31T00:00:00-05:00",
+                    },
+                },
+                {
+                    "id": "456",
+                    "closed_for": "temporary closure 2",
+                    "extended_closing": "false",
+                    "applies": {
+                        "start": "2023-01-01T00:00:00-05:00",
+                        "end": "2023-01-01T12:00:00-05:00",
+                    },
+                },
+            ]
+        },
     },
     {
-        'id': 'libc',
-        'name': 'library c',
-        'hours': {'regular': [
-            {'day': 'Sun.', 'open': '13:00', 'close': '19:00'},
-            {'day': 'Mon.', 'open': '14:00', 'close': '20:00'}
-        ]},
-        '_embedded': {'alerts': [
-            {
-                'id': '789',
-                'extended_closing': None,
-                'applies': {
-                    'start': '2022-12-31T00:00:00-05:00',
-                    'end': '2023-01-31T00:00:00-05:00'
-                }
-            },
-            {
-                'id': '012',
-                'extended_closing': 'true',
-                'applies': {
-                    'start': '2022-12-31T00:00:00-05:00',
-                    'end': '2023-02-31T00:00:00-05:00'
-                }
-            },
-        ]}
+        "id": "libc",
+        "name": "library c",
+        "hours": {
+            "regular": [
+                {"day": "Sun.", "open": "13:00", "close": "19:00"},
+                {"day": "Mon.", "open": "14:00", "close": "20:00"},
+            ]
+        },
+        "_embedded": {
+            "alerts": [
+                {
+                    "id": "789",
+                    "extended_closing": None,
+                    "applies": {
+                        "start": "2022-12-31T00:00:00-05:00",
+                        "end": "2023-01-31T00:00:00-05:00",
+                    },
+                },
+                {
+                    "id": "012",
+                    "extended_closing": "true",
+                    "applies": {
+                        "start": "2022-12-31T00:00:00-05:00",
+                        "end": "2023-02-31T00:00:00-05:00",
+                    },
+                },
+            ]
+        },
     },
     {
-        'id': 'libd',
-        'name': 'library d',
-        'hours': {'regular': [
-            {'day': 'Sun.', 'open': None, 'close': None},
-            {'day': 'Mon.', 'open': None, 'close': None}
-        ]},
-        '_embedded': {}
-    }
+        "id": "libd",
+        "name": "library d",
+        "hours": {
+            "regular": [
+                {"day": "Sun.", "open": None, "close": None},
+                {"day": "Mon.", "open": None, "close": None},
+            ]
+        },
+        "_embedded": {},
+    },
 ]
 
 _TEST_API_RESPONSE_ALL_CLOSED = [_TEST_API_RESPONSE[0], _TEST_API_RESPONSE[3]]
 
 _TEST_REDSHIFT_RESPONSE = [
-    ('liba', time(9, 0), time(10, 0)),
-    ('libb', time(11, 0), time(17, 0)),
-    ('libc', time(18, 0), time(19, 0)),
-    ('libe', time(19, 0), time(20, 0))
+    ("liba", time(9, 0), time(10, 0)),
+    ("libb", time(11, 0), time(17, 0)),
+    ("libc", time(18, 0), time(19, 0)),
+    ("libe", time(19, 0), time(20, 0)),
 ]
 
-_TEST_REDSHIFT_RESPONSE_ALL_CLOSED = [('liba', None, None),
-                                      ('libd', None, None)]
+_TEST_REDSHIFT_RESPONSE_ALL_CLOSED = [("liba", None, None), ("libd", None, None)]
 
 _AVRO_ALERTS_INPUT = [
     {
-        'drupal_location_id': 'libb',
-        'name': 'library b',
-        'alert_id': '123',
-        'closed_for': 'temporary closure 1',
-        'extended_closing': False,
-        'alert_start': '2022-12-31 00:00:00-05:00',
-        'alert_end': '2023-01-31 00:00:00-05:00',
-        'polling_datetime': '2023-01-01 01:23:45-05:00'
+        "drupal_location_id": "libb",
+        "name": "library b",
+        "alert_id": "123",
+        "closed_for": "temporary closure 1",
+        "extended_closing": False,
+        "alert_start": "2022-12-31 00:00:00-05:00",
+        "alert_end": "2023-01-31 00:00:00-05:00",
+        "polling_datetime": "2023-01-01 01:23:45-05:00",
     },
     {
-        'drupal_location_id': 'libb',
-        'name': 'library b',
-        'alert_id': '456',
-        'closed_for': 'temporary closure 2',
-        'extended_closing': False,
-        'alert_start': '2023-01-01 00:00:00-05:00',
-        'alert_end': '2023-01-01 12:00:00-05:00',
-        'polling_datetime': '2023-01-01 01:23:45-05:00'
+        "drupal_location_id": "libb",
+        "name": "library b",
+        "alert_id": "456",
+        "closed_for": "temporary closure 2",
+        "extended_closing": False,
+        "alert_start": "2023-01-01 00:00:00-05:00",
+        "alert_end": "2023-01-01 12:00:00-05:00",
+        "polling_datetime": "2023-01-01 01:23:45-05:00",
     },
     {
-        'drupal_location_id': 'libc',
-        'name': 'library c',
-        'alert_id': '012',
-        'closed_for': None,
-        'extended_closing': True,
-        'alert_start': '2022-12-31 00:00:00-05:00',
-        'alert_end': '2023-02-31 00:00:00-05:00',
-        'polling_datetime': '2023-01-01 01:23:45-05:00'
-    }
+        "drupal_location_id": "libc",
+        "name": "library c",
+        "alert_id": "012",
+        "closed_for": None,
+        "extended_closing": True,
+        "alert_start": "2022-12-31 00:00:00-05:00",
+        "alert_end": "2023-02-31 00:00:00-05:00",
+        "polling_datetime": "2023-01-01 01:23:45-05:00",
+    },
 ]
 
 _AVRO_HOURS_INPUT = [
     {
-        'drupal_location_id': 'liba',
-        'name': 'library a',
-        'weekday': 'Sun',
-        'regular_open': '09:00',
-        'regular_close': '15:00',
-        'date_of_change': '2023-01-01'
+        "drupal_location_id": "liba",
+        "name": "library a",
+        "weekday": "Sun",
+        "regular_open": "09:00",
+        "regular_close": "15:00",
+        "date_of_change": "2023-01-01",
     },
     {
-        'drupal_location_id': 'libc',
-        'name': 'library c',
-        'weekday': 'Sun',
-        'regular_open': '13:00',
-        'regular_close': '19:00',
-        'date_of_change': '2023-01-01'
+        "drupal_location_id": "libc",
+        "name": "library c",
+        "weekday": "Sun",
+        "regular_open": "13:00",
+        "regular_close": "19:00",
+        "date_of_change": "2023-01-01",
     },
     {
-        'drupal_location_id': 'libd',
-        'name': 'library d',
-        'weekday': 'Sun',
-        'regular_open': None,
-        'regular_close': None,
-        'date_of_change': '2023-01-01'
-    }
+        "drupal_location_id": "libd",
+        "name": "library d",
+        "weekday": "Sun",
+        "regular_open": None,
+        "regular_close": None,
+        "date_of_change": "2023-01-01",
+    },
 ]
 
 _AVRO_HOURS_INPUT_ALL_CLOSED = [_AVRO_HOURS_INPUT[0]]
 
 
-@freeze_time('2023-01-01 01:23:45-05:00')
+@freeze_time("2023-01-01 01:23:45-05:00")
 class TestMain:
 
     @classmethod
@@ -169,116 +180,121 @@ class TestMain:
 
     @pytest.fixture
     def test_instance(self, mocker):
-        mocker.patch('main.load_env_file')
-        mocker.patch('main.create_log')
-        mocker.patch('main.build_location_hours_redshift_query',
-                     return_value='REDSHIFT QUERY')
+        mocker.patch("main.load_env_file")
+        mocker.patch("main.create_log")
+        mocker.patch(
+            "main.build_location_hours_redshift_query", return_value="REDSHIFT QUERY"
+        )
 
     @pytest.fixture
     def mock_avro_encoder(self, mocker):
         mock_avro_encoder = mocker.MagicMock()
-        mock_avro_encoder.encode_batch.return_value = [b'1', b'2', b'3']
-        mocker.patch('main.AvroEncoder', return_value=mock_avro_encoder)
+        mock_avro_encoder.encode_batch.return_value = [b"1", b"2", b"3"]
+        mocker.patch("main.AvroEncoder", return_value=mock_avro_encoder)
         return mock_avro_encoder
 
     @pytest.fixture
     def mock_kinesis_client(self, mocker):
         mock_kinesis_client = mocker.MagicMock()
-        mocker.patch('main.KinesisClient', return_value=mock_kinesis_client)
+        mocker.patch("main.KinesisClient", return_value=mock_kinesis_client)
         return mock_kinesis_client
 
     @pytest.fixture
     def mock_redshift_client(self, mocker):
         mock_redshift_client = mocker.MagicMock()
-        mock_redshift_client.execute_query.return_value = \
-            _TEST_REDSHIFT_RESPONSE
-        mocker.patch('main.RedshiftClient', return_value=mock_redshift_client)
+        mock_redshift_client.execute_query.return_value = _TEST_REDSHIFT_RESPONSE
+        mocker.patch("main.RedshiftClient", return_value=mock_redshift_client)
         return mock_redshift_client
 
     def test_poll_location_closure_alerts(
-            self, test_instance, mock_avro_encoder, mock_kinesis_client,
-            mocker):
-        os.environ['MODE'] = 'LOCATION_CLOSURE_ALERT'
+        self, test_instance, mock_avro_encoder, mock_kinesis_client, mocker
+    ):
+        os.environ["MODE"] = "LOCATION_CLOSURE_ALERT"
 
         mock_locations_client = mocker.MagicMock()
         mock_locations_client.query.return_value = _TEST_API_RESPONSE
-        mocker.patch('main.LocationsApiClient',
-                     return_value=mock_locations_client)
+        mocker.patch("main.LocationsApiClient", return_value=mock_locations_client)
 
         main.main()
 
-        mock_avro_encoder.encode_batch.assert_called_once_with(
-            _AVRO_ALERTS_INPUT)
-        mock_kinesis_client.send_records.assert_called_once_with(
-            [b'1', b'2', b'3'])
+        mock_avro_encoder.encode_batch.assert_called_once_with(_AVRO_ALERTS_INPUT)
+        mock_kinesis_client.send_records.assert_called_once_with([b"1", b"2", b"3"])
         mock_kinesis_client.close.assert_called_once()
-        del os.environ['MODE']
+        del os.environ["MODE"]
 
     def test_poll_location_closure_alerts_with_no_alerts(
-            self, mock_avro_encoder, mock_kinesis_client, mocker):
-        os.environ['MODE'] = 'LOCATION_CLOSURE_ALERT'
-        mocker.patch('main.load_env_file')
-        mocker.patch('main.create_log')
+        self, mock_avro_encoder, mock_kinesis_client, mocker
+    ):
+        os.environ["MODE"] = "LOCATION_CLOSURE_ALERT"
+        mocker.patch("main.load_env_file")
+        mocker.patch("main.create_log")
 
         mock_locations_client = mocker.MagicMock()
         mock_locations_client.query.return_value = [
-            _TEST_API_RESPONSE[0], _TEST_API_RESPONSE[3]]
-        mocker.patch('main.LocationsApiClient',
-                     return_value=mock_locations_client)
+            _TEST_API_RESPONSE[0],
+            _TEST_API_RESPONSE[3],
+        ]
+        mocker.patch("main.LocationsApiClient", return_value=mock_locations_client)
         main.main()
 
         mock_avro_encoder.encode_batch.assert_called_once_with(
-            [{'drupal_location_id': 'location_closure_alert_poller',
-              'polling_datetime': '2023-01-01 01:23:45-05:00'}])
-        del os.environ['MODE']
+            [
+                {
+                    "drupal_location_id": "location_closure_alert_poller",
+                    "polling_datetime": "2023-01-01 01:23:45-05:00",
+                }
+            ]
+        )
+        del os.environ["MODE"]
 
     def test_poll_location_hours(
-            self, test_instance, mock_avro_encoder, mock_kinesis_client,
-            mock_redshift_client, mocker):
-        os.environ['MODE'] = 'LOCATION_HOURS'
+        self,
+        test_instance,
+        mock_avro_encoder,
+        mock_kinesis_client,
+        mock_redshift_client,
+        mocker,
+    ):
+        os.environ["MODE"] = "LOCATION_HOURS"
 
         mock_locations_client = mocker.MagicMock()
         mock_locations_client.query.return_value = _TEST_API_RESPONSE
-        mocker.patch('main.LocationsApiClient',
-                     return_value=mock_locations_client)
+        mocker.patch("main.LocationsApiClient", return_value=mock_locations_client)
 
         main.main()
 
         mock_redshift_client.connect.assert_called_once()
-        mock_redshift_client.execute_query.assert_called_once_with(
-            'REDSHIFT QUERY')
+        mock_redshift_client.execute_query.assert_called_once_with("REDSHIFT QUERY")
         mock_redshift_client.close_connection.assert_called_once()
-        mock_avro_encoder.encode_batch.assert_called_once_with(
-            _AVRO_HOURS_INPUT)
-        mock_kinesis_client.send_records.assert_called_once_with(
-            [b'1', b'2', b'3'])
+        mock_avro_encoder.encode_batch.assert_called_once_with(_AVRO_HOURS_INPUT)
+        mock_kinesis_client.send_records.assert_called_once_with([b"1", b"2", b"3"])
         mock_kinesis_client.close.assert_called_once()
-        del os.environ['MODE']
+        del os.environ["MODE"]
 
     def test_poll_location_hours_all_closed(
-            self, test_instance, mock_avro_encoder, mock_kinesis_client,
-            mocker):
-        os.environ['MODE'] = 'LOCATION_HOURS'
+        self, test_instance, mock_avro_encoder, mock_kinesis_client, mocker
+    ):
+        os.environ["MODE"] = "LOCATION_HOURS"
 
         mock_locations_client = mocker.MagicMock()
-        mock_locations_client.query.return_value = \
-            _TEST_API_RESPONSE_ALL_CLOSED
-        mocker.patch('main.LocationsApiClient',
-                     return_value=mock_locations_client)
+        mock_locations_client.query.return_value = _TEST_API_RESPONSE_ALL_CLOSED
+        mocker.patch("main.LocationsApiClient", return_value=mock_locations_client)
 
         mock_redshift_client = mocker.MagicMock()
-        mock_redshift_client.execute_query.return_value = \
+        mock_redshift_client.execute_query.return_value = (
             _TEST_REDSHIFT_RESPONSE_ALL_CLOSED
-        mocker.patch('main.RedshiftClient', return_value=mock_redshift_client)
+        )
+        mocker.patch("main.RedshiftClient", return_value=mock_redshift_client)
 
         main.main()
 
         mock_avro_encoder.encode_batch.assert_called_once_with(
-            _AVRO_HOURS_INPUT_ALL_CLOSED)
-        del os.environ['MODE']
+            _AVRO_HOURS_INPUT_ALL_CLOSED
+        )
+        del os.environ["MODE"]
 
     def test_unknown_mode(self, test_instance):
-        os.environ['MODE'] = 'fake-mode'
+        os.environ["MODE"] = "fake-mode"
         with pytest.raises(main.LocationHoursPipelineError):
             main.main()
-        del os.environ['MODE']
+        del os.environ["MODE"]

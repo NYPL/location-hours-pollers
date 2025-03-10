@@ -1,1 +1,1 @@
-from .locations_api_client import LocationsApiClient, LocationsApiClientError # noqa
+from .locations_api_client import LocationsApiClient, LocationsApiClientError
