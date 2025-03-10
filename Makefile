@@ -26,4 +26,4 @@ test:
 	pytest
 
 lint:
-	flake8 --exclude *env
+	black ./ --check --exclude="(env/)|(tests/)"
