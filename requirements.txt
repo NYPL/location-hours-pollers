@@ -1,6 +1,6 @@
-flake8
+black
 freezegun
-nypl-py-utils[avro-encoder,kinesis-client,redshift-client,config-helper]==1.0.4
+nypl-py-utils[avro-client,kinesis-client,redshift-client,config-helper]==1.6.4
 pytest
 pytest-mock
 requests
