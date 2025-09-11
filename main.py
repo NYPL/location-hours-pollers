@@ -3,24 +3,14 @@ import pytz
 
 from datetime import datetime
 from lib import LocationsApiClient
-from lib.query_helper import build_location_hours_redshift_query
+from lib.query_helper import build_location_hours_redshift_query, build_update_query
 from nypl_py_utils.classes.avro_client import AvroEncoder
 from nypl_py_utils.classes.kinesis_client import KinesisClient
 from nypl_py_utils.classes.redshift_client import RedshiftClient
 from nypl_py_utils.functions.config_helper import load_env_file
 from nypl_py_utils.functions.log_helper import create_log
 
-
 _TIMEZONE = pytz.timezone("US/Eastern")
-_WEEKDAY_MAP = {
-    0: "Mon.",
-    1: "Tue.",
-    2: "Wed.",
-    3: "Thu.",
-    4: "Fri.",
-    5: "Sat.",
-    6: "Sun.",
-}
 
 
 def main():
@@ -39,17 +29,13 @@ def main():
 
 
 def poll_location_hours(logger):
+    today = datetime.now(_TIMEZONE).date()
+    weekday = today.strftime("%A")
     locations_api_client = LocationsApiClient()
-    avro_encoder = AvroEncoder(os.environ["BASE_SCHEMA_URL"] + "LocationHours")
+    avro_encoder = AvroEncoder(os.environ["BASE_SCHEMA_URL"] + "LocationHoursV2")
     kinesis_client = KinesisClient(
         os.environ["HOURS_KINESIS_STREAM_ARN"], int(os.environ["KINESIS_BATCH_SIZE"])
     )
-
-    # Get today's date and day of the week. The Refinery weekday contains a
-    # period and the Redshift weekday does not.
-    today = datetime.now(_TIMEZONE).date()
-    api_weekday = _WEEKDAY_MAP[today.weekday()]
-    redshift_weekday = api_weekday.rstrip(".")
 
     # Query Redshift for all of the currently stored regular hours for today's
     # day of the week
@@ -59,21 +45,15 @@ def poll_location_hours(logger):
         os.environ["REDSHIFT_DB_USER"],
         os.environ["REDSHIFT_DB_PASSWORD"],
     )
-    redshift_table = "location_hours"
+    redshift_table = "location_hours_v2"
     if os.environ["REDSHIFT_DB_NAME"] != "production":
         redshift_table += "_" + os.environ["REDSHIFT_DB_NAME"]
     redshift_client.connect()
     raw_redshift_data = redshift_client.execute_query(
-        build_location_hours_redshift_query(redshift_table, redshift_weekday)
+        build_location_hours_redshift_query(redshift_table, weekday)
     )
     redshift_client.close_connection()
-    redshift_dict = {
-        row[0]: (
-            row[1].isoformat()[:-3] if row[1] is not None else row[1],
-            row[2].isoformat()[:-3] if row[1] is not None else row[2],
-        )
-        for row in raw_redshift_data
-    }
+    redshift_dict = {row[0]: [row[1], row[2]] for row in raw_redshift_data}
 
     # Determine the earliest open and latest close or use placeholders if all
     # libraries are closed on that day (Sundays)
@@ -86,70 +66,78 @@ def poll_location_hours(logger):
     redshift_earliest_open = min(opening_hours) if opening_hours else "25:00"
     redshift_latest_close = max(closing_hours) if closing_hours else "00:00"
 
-    logger.info("Polling Refinery for regular location hours")
+    logger.info("Polling Drupal for regular location hours")
     records = []
-    for location in locations_api_client.query():
+    for location in locations_api_client.query(query_alerts=False):
+        location_id = location["attributes"]["field_ts_location_code"]
         api_hours = next(
             filter(
-                lambda daily_hours: daily_hours["day"] == api_weekday,
-                location["hours"]["regular"],
+                lambda daily_hours: daily_hours["day"] == weekday,
+                location["attributes"]["location_hours"]["regular_hours"],
             )
-        )
-        redshift_hours = redshift_dict.get(location["id"], None)
-        if redshift_hours is None and os.environ["ENVIRONMENT"] == "production":
-            logger.warning("New location id found: {}".format(location["id"]))
+        )["hours"].split("-")
+        if api_hours == ["Closed"]:
+            api_hours = [None, None]
+        else:
+            api_hours = [datetime.strptime(hr, "%I:%M %p").time() for hr in api_hours]
+
+        redshift_hours = redshift_dict.get(location_id, None)
+        if redshift_hours is None and os.environ["ENVIRONMENT"] in {
+            "production",
+            "test_environment",
+        }:
+            logger.warning("New location id found: {}".format(location_id))
 
         # Check today's regular hours in Redshift against today's regular hours
         # in the API and construct a record if they are different
-        if (
-            redshift_hours is None
-            or redshift_hours[0] != api_hours["open"]
-            or redshift_hours[1] != api_hours["close"]
-        ):
+        if redshift_hours != api_hours:
             records.append(
                 {
-                    "drupal_location_id": location["id"],
-                    "name": location["name"],
-                    "weekday": redshift_weekday,
-                    "regular_open": api_hours["open"],
-                    "regular_close": api_hours["close"],
+                    "location_id": location_id,
+                    "name": location["attributes"]["title"],
+                    "weekday": weekday,
+                    "regular_open": (
+                        None if api_hours[0] is None else api_hours[0].isoformat()
+                    ),
+                    "regular_close": (
+                        None if api_hours[1] is None else api_hours[1].isoformat()
+                    ),
                     "date_of_change": today.isoformat(),
+                    "is_current": True,
                 }
             )
-            if (
-                api_hours["open"] is not None
-                and api_hours["open"] < redshift_earliest_open
-            ):
+            if api_hours[0] is not None and api_hours[0] < redshift_earliest_open:
                 logger.warning(
                     (
                         "Earliest opening time changed: was {old_open} and is "
                         "now {new_open}"
-                    ).format(
-                        old_open=redshift_earliest_open, new_open=api_hours["open"]
-                    )
+                    ).format(old_open=redshift_earliest_open, new_open=api_hours[0])
                 )
-            if (
-                api_hours["close"] is not None
-                and api_hours["close"] > redshift_latest_close
-            ):
+            if api_hours[1] is not None and api_hours[1] > redshift_latest_close:
                 logger.warning(
                     (
                         "Latest closing time changed: was {old_close} and is now "
                         "{new_close}"
-                    ).format(
-                        old_close=redshift_latest_close, new_close=api_hours["close"]
-                    )
+                    ).format(old_close=redshift_latest_close, new_close=api_hours[1])
                 )
     encoded_records = avro_encoder.encode_batch(records)
     if os.environ.get("IGNORE_KINESIS", False) != "True":
         kinesis_client.send_records(encoded_records)
     kinesis_client.close()
+
+    if records:
+        stale_locations_str = "'" + "','".join(r["location_id"] for r in records) + "'"
+        redshift_client.connect()
+        redshift_client.execute_transaction(
+            [(build_update_query(redshift_table, weekday, stale_locations_str), None)]
+        )
+        redshift_client.close_connection()
     logger.info("Finished location hours poll")
 
 
 def poll_location_closure_alerts(logger):
     locations_api_client = LocationsApiClient()
-    avro_encoder = AvroEncoder(os.environ["BASE_SCHEMA_URL"] + "LocationClosureAlert")
+    avro_encoder = AvroEncoder(os.environ["BASE_SCHEMA_URL"] + "LocationClosureAlertV2")
     kinesis_client = KinesisClient(
         os.environ["CLOSURE_ALERT_KINESIS_STREAM_ARN"],
         int(os.environ["KINESIS_BATCH_SIZE"]),
@@ -157,24 +145,43 @@ def poll_location_closure_alerts(logger):
 
     # Query the API for every alert marked as a closure and construct a record
     # for each one
-    logger.info("Polling Refinery for location closure alerts")
+    logger.info("Polling Drupal for location closure alerts")
     records = []
     polling_datetime = datetime.now(_TIMEZONE).isoformat(sep=" ")
-    for location in locations_api_client.query():
-        for alert in location["_embedded"].get("alerts", []):
-            if alert["extended_closing"] == "true" or "closed_for" in alert:
-                records.append(
-                    {
-                        "drupal_location_id": location["id"],
-                        "name": location["name"],
-                        "alert_id": alert["id"],
-                        "closed_for": alert.get("closed_for", None),
-                        "extended_closing": alert["extended_closing"] == "true",
-                        "alert_start": " ".join(alert["applies"]["start"].split("T")),
-                        "alert_end": " ".join(alert["applies"]["end"].split("T")),
-                        "polling_datetime": polling_datetime,
-                    }
+    for alert in locations_api_client.query(query_alerts=True):
+        if alert["closing_date_start"] != None:
+            location_id = alert["location_codes"]
+            location_name = alert["location_names"]
+            if location_id is not None and len(location_id) != 1:
+                logger.error(
+                    f"More than one location id listed for alert {alert['id']}: "
+                    f"{location_id}"
                 )
+                continue
+            if location_name is not None and len(location_name) != 1:
+                logger.error(
+                    f"More than one location name listed for alert {alert['id']}: "
+                    f"{location_name}"
+                )
+                continue
+            if alert["extended"] is None:
+                logger.warning(f"NULL 'extended' value for alert {alert['id']}")
+            records.append(
+                {
+                    "alert_id": alert["id"],
+                    "location_id": None if location_id is None else location_id[0],
+                    "name": None if location_name is None else location_name[0],
+                    "closed_for": alert["message_plain"].strip(),
+                    "extended_closing": (
+                        None
+                        if alert["extended"] is None
+                        else alert["extended"].lower() == "true"
+                    ),
+                    "alert_start": " ".join(alert["closing_date_start"].split("T")),
+                    "alert_end": " ".join(alert["closing_date_end"].split("T")),
+                    "polling_datetime": polling_datetime,
+                }
+            )
 
     # If there are no alerts, still record the datetime of the polling, as it
     # may still be required by the LocationClosureAggregator

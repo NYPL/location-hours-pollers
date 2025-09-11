@@ -10,7 +10,7 @@ help:
 	@echo "make test"
 	@echo "    run associated test suite with pytest"
 	@echo "make lint"
-	@echo "    lint project files using the flake8 linter"
+	@echo "    lint project files using the black linter"
 
 run-hours:
 	export ENVIRONMENT=devel; \
