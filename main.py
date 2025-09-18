@@ -70,16 +70,25 @@ def poll_location_hours(logger):
     records = []
     for location in locations_api_client.query(query_alerts=False):
         location_id = location["attributes"]["field_ts_location_code"]
-        api_hours = next(
+        hours_data = next(
             filter(
                 lambda daily_hours: daily_hours["day"] == weekday,
                 location["attributes"]["location_hours"]["regular_hours"],
             )
-        )["hours"].split("-")
-        if api_hours == ["Closed"]:
-            api_hours = [None, None]
+        )["hours_data"]
+        if len(hours_data) > 1:
+            logger.error(
+                f"More than one hours range listed for location {location_id}: "
+                f"{hours_data}"
+            )
+            continue
+        elif bool(hours_data):
+            api_hours = [
+                datetime.strptime(hours_data[0]["start"], "%I:%M %p").time(),
+                datetime.strptime(hours_data[0]["end"], "%I:%M %p").time(),
+            ]
         else:
-            api_hours = [datetime.strptime(hr, "%I:%M %p").time() for hr in api_hours]
+            api_hours = [None, None]
 
         redshift_hours = redshift_dict.get(location_id, None)
         if redshift_hours is None and os.environ["ENVIRONMENT"] in {

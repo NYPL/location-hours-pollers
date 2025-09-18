@@ -12,8 +12,14 @@ _TEST_HOURS_API_RESPONSE = [
             "title": "library a",
             "location_hours": {
                 "regular_hours": [
-                    {"day": "Sunday", "hours": "9:00 AM-3:00 PM"},
-                    {"day": "Monday", "hours": "10:00 AM-4:00 PM"},
+                    {
+                        "day": "Sunday",
+                        "hours_data": [{"start": "9:00 AM", "end": "3:00 PM"}],
+                    },
+                    {
+                        "day": "Monday",
+                        "hours_data": [{"start": "10:00 AM", "end": "4:00 PM"}],
+                    },
                 ]
             },
             "other": "other_field",
@@ -26,8 +32,14 @@ _TEST_HOURS_API_RESPONSE = [
             "title": "library b",
             "location_hours": {
                 "regular_hours": [
-                    {"day": "Sunday", "hours": "11:00 AM-5:00 PM"},
-                    {"day": "Monday", "hours": "12:00 PM-6:00 PM"},
+                    {
+                        "day": "Sunday",
+                        "hours_data": [{"start": "11:00 AM", "end": "5:00 PM"}],
+                    },
+                    {
+                        "day": "Monday",
+                        "hours_data": [{"start": "12:00 PM", "end": "6:00 PM"}],
+                    },
                 ]
             },
             "other": "other_field",
@@ -40,8 +52,14 @@ _TEST_HOURS_API_RESPONSE = [
             "title": "library c",
             "location_hours": {
                 "regular_hours": [
-                    {"day": "Sunday", "hours": "1:33 PM-7:44 PM"},
-                    {"day": "Monday", "hours": "2:00 PM-8:00 PM"},
+                    {
+                        "day": "Sunday",
+                        "hours_data": [{"start": "1:33 PM", "end": "7:44 PM"}],
+                    },
+                    {
+                        "day": "Monday",
+                        "hours_data": [{"start": "2:00 PM", "end": "8:00 PM"}],
+                    },
                 ]
             },
             "other": "other_field",
@@ -54,8 +72,8 @@ _TEST_HOURS_API_RESPONSE = [
             "title": "library d",
             "location_hours": {
                 "regular_hours": [
-                    {"day": "Sunday", "hours": "Closed"},
-                    {"day": "Monday", "hours": "Closed"},
+                    {"day": "Sunday", "hours_data": []},
+                    {"day": "Monday", "hours_data": []},
                 ]
             },
             "other": "other_field",
@@ -385,7 +403,10 @@ class TestMain:
                     "title": "library f",
                     "location_hours": {
                         "regular_hours": [
-                            {"day": "Sunday", "hours": "8:00 AM-10:00 PM"}
+                            {
+                                "day": "Sunday",
+                                "hours_data": [{"start": "8:00 AM", "end": "10:00 PM"}],
+                            }
                         ]
                     },
                 }
@@ -418,6 +439,49 @@ class TestMain:
                 }
             ]
         )
+        del os.environ["MODE"]
+
+    def test_poll_location_hours_with_error(
+        self,
+        test_instance,
+        mock_avro_encoder,
+        mock_kinesis_client,
+        mock_redshift_client,
+        mocker,
+        caplog,
+    ):
+        os.environ["MODE"] = "LOCATION_HOURS"
+        mock_locations_client = mocker.MagicMock()
+        mock_locations_client.query.return_value = [
+            {
+                "attributes": {
+                    "field_ts_location_code": "libg",
+                    "title": "library g",
+                    "location_hours": {
+                        "regular_hours": [
+                            {
+                                "day": "Sunday",
+                                "hours_data": [
+                                    {"start": "8:00 AM", "end": "9:00 AM"},
+                                    {"start": "10:00 AM", "end": "11:00 AM"},
+                                ],
+                            }
+                        ]
+                    },
+                }
+            }
+        ] + _TEST_HOURS_API_RESPONSE
+        mocker.patch("main.LocationsApiClient", return_value=mock_locations_client)
+
+        with caplog.at_level(logging.WARNING):
+            main.main()
+
+        assert (
+            "More than one hours range listed for location libg: [{'start': '8:00 AM', "
+            "'end': '9:00 AM'}, {'start': '10:00 AM', 'end': '11:00 AM'}]"
+            in caplog.text
+        )
+        mock_avro_encoder.encode_batch.assert_called_once_with(_AVRO_HOURS_INPUT)
         del os.environ["MODE"]
 
     def test_poll_location_hours_all_closed(
