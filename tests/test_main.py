@@ -373,7 +373,10 @@ class TestMain:
         mock_redshift_client.execute_query.assert_called_once_with("REDSHIFT QUERY")
         assert mock_redshift_client.close_connection.call_count == 2
         mock_update_builder.assert_called_once_with(
-            "location_hours_v2_test_redshift_name", "Sunday", "'liba','libc','libd'"
+            "location_hours_v2_test_redshift_name",
+            "Sunday",
+            "'liba','libc','libd'",
+            "2023-01-01",
         )
         mock_redshift_client.execute_transaction.assert_called_once_with(
             [("UPDATE QUERY", None)]

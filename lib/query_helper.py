@@ -10,7 +10,9 @@ _LOCATION_HOURS_REDSHIFT_QUERY = """
 _UPDATE_QUERY = """
     UPDATE {redshift_table}
     SET is_current = False
-    WHERE weekday = '{weekday}' AND location_id IN ({stale_locations_str});"""
+    WHERE weekday = '{weekday}'
+        AND location_id IN ({stale_locations_str})
+        AND date_of_change < '{today}';"""
 
 
 def build_location_hours_redshift_query(redshift_table, weekday):
@@ -19,9 +21,10 @@ def build_location_hours_redshift_query(redshift_table, weekday):
     )
 
 
-def build_update_query(redshift_table, weekday, stale_locations_str):
+def build_update_query(redshift_table, weekday, stale_locations_str, today):
     return _UPDATE_QUERY.format(
         redshift_table=redshift_table,
         weekday=weekday,
         stale_locations_str=stale_locations_str,
+        today=today,
     )

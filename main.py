@@ -138,7 +138,14 @@ def poll_location_hours(logger):
         stale_locations_str = "'" + "','".join(r["location_id"] for r in records) + "'"
         redshift_client.connect()
         redshift_client.execute_transaction(
-            [(build_update_query(redshift_table, weekday, stale_locations_str), None)]
+            [
+                (
+                    build_update_query(
+                        redshift_table, weekday, stale_locations_str, today.isoformat()
+                    ),
+                    None,
+                )
+            ]
         )
         redshift_client.close_connection()
     logger.info("Finished location hours poll")
