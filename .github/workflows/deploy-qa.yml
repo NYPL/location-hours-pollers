@@ -51,23 +51,28 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push image to Amazon ECR
+      - name: Build, tag, and push hours image to Amazon ECR and update ECS
+        if: needs.check_qa_tags.outputs.has_qa_hours_tag == 'true'
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: location-hours-pollers-v2
+          ECR_REPOSITORY: location-hours-v2-poller
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:qa-latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:qa-latest
+          aws ecs update-service --cluster location-hours-v2-poller-qa --service location-hours-v2-poller-qa --force-new-deployment
       
-      - name: Force ECS hours update
-        if: needs.check_qa_tags.outputs.has_qa_hours_tag == 'true'
-        run: |
-          aws ecs update-service --cluster location-hours-poller-qa --service location-hours-poller-qa --force-new-deployment
-      
-      - name: Force ECS closure alert update
+      - name: Build, tag, and push closure alert image to Amazon ECR and update ECS
         if: needs.check_qa_tags.outputs.has_qa_closure_alert_tag == 'true'
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: location-closure-alert-v2-poller
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          aws ecs update-service --cluster location-closure-alert-poller-qa --service location-closure-alert-poller-qa --force-new-deployment
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:qa-latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:qa-latest
+          aws ecs update-service --cluster location-closure-alert-v2-poller-qa --service location-closure-alert-v2-poller-qa --force-new-deployment
