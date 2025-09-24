@@ -1,8 +1,8 @@
 # LocationHoursPoller
 
 The LocationHoursPoller has two modes:
-* The `LOCATION_HOURS` mode periodically checks [Refinery](https://refinery.nypl.org/api/nypl/locations/v1.0/locations) for each library's regular hours, checks them against what's already stored in Redshift, and writes any newly updated hours to LocationHours Kinesis streams for ingest into the [BIC](https://github.com/NYPL/BIC)
-* The `LOCATION_CLOSURE_ALERT` mode periodically checks [Refinery](https://refinery.nypl.org/api/nypl/locations/v1.0/locations) for any library closure alerts and writes them to LocationClosureAlert Kinesis streams for ingest into the [BIC](https://github.com/NYPL/BIC).
+* The `LOCATION_HOURS` mode periodically checks the [Drupal locations endpoint](https://drupal.nypl.org/jsonapi/node/library) for each library's regular hours, checks them against what's already stored in Redshift, and writes any newly updated hours to LocationHoursV2 Kinesis streams for ingest into the [BIC](https://github.com/NYPL/BIC)
+* The `LOCATION_CLOSURE_ALERT` mode periodically checks the [Drupal alerts endpoint](https://drupal.nypl.org/api/alerts/location) for any library closure alerts and writes them to LocationClosureAlertV2 Kinesis streams for ingest into the [BIC](https://github.com/NYPL/BIC).
 
 ## Running locally
 * `cd` into this directory
@@ -37,11 +37,11 @@ This repo uses the [Main-QA-Production](https://github.com/NYPL/engineering-gene
 - Deploy app to production and confirm it works
 
 ## Deployment
-The poller is uploaded to a single ECR repository [here](https://us-east-1.console.aws.amazon.com/ecr/repositories/private/946183545209/location-hours-pollers) that's used by four ECS instances (qa and prod for both the location-hours-poller and the location-closure-alert-poller). To upload a new QA version of this service, create a new release in GitHub off of the `qa` branch and tag it either `qa-vX.X.X`, `qa-hours-vX.X.X`, or `qa-closure-alert-vX.X.X`. The GitHub Actions deploy-qa workflow will then upload the code to ECR and update the appropriate ECS service. To deploy to production, create the release from the `production` branch and tag it `production-vX.X.X`, `production-hours-vX.X.X`, or `production-closure-alert-vX.X.X`. Tagging the release `qa-vX.X.X` or `production-vX.X.X` will trigger both the hours and the closure alert ECS services to be updated; otherwise, only the tagged poller will be updated. To trigger the apps to run immediately (rather than waiting for the next scheduled event), run:
+The poller is uploaded to a single ECR repository [here](https://us-east-1.console.aws.amazon.com/ecr/repositories/private/946183545209/location-hours-pollers-v2) that's used by four ECS instances (qa and prod for both the location-hours-poller and the location-closure-alert-poller). To upload a new QA version of this service, create a new release in GitHub off of the `qa` branch and tag it either `qa-vX.X.X`, `qa-hours-vX.X.X`, or `qa-closure-alert-vX.X.X`. The GitHub Actions deploy-qa workflow will then upload the code to ECR and update the appropriate ECS service. To deploy to production, create the release from the `production` branch and tag it `production-vX.X.X`, `production-hours-vX.X.X`, or `production-closure-alert-vX.X.X`. Tagging the release `qa-vX.X.X` or `production-vX.X.X` will trigger both the hours and the closure alert ECS services to be updated; otherwise, only the tagged poller will be updated. To trigger the apps to run immediately (rather than waiting for the next scheduled event), run:
 ```bash
-aws ecs run-task --cluster location-hours-poller-qa --task-definition location-hours-poller-qa:4 --count 1 --region us-east-1 --profile nypl-digital-dev
+aws ecs run-task --cluster location-hours-v2-poller-qa --task-definition location-hours-v2-poller-qa:4 --count 1 --region us-east-1 --profile nypl-digital-dev
 
-aws ecs run-task --cluster location-closure-alert-poller-qa --task-definition location-closure-alert-poller-qa:4 --count 1 --region us-east-1 --profile nypl-digital-dev
+aws ecs run-task --cluster location-closure-alert-v2-poller-qa --task-definition location-closure-alert-v2-poller-qa:4 --count 1 --region us-east-1 --profile nypl-digital-dev
 ```
 
 ## Environment variables
@@ -50,7 +50,6 @@ Note that the QA and production env files are actually read by the deployed serv
 | Name        | Notes           |
 | ------------- | ------------- |
 | `AWS_REGION` | Always `us-east-1`. The AWS region used for the Redshift, KMS, and Kinesis clients. |
-| `LOCATIONS_API_URL` | API endpoint to which the poller sends location requests |
 | `KINESIS_BATCH_SIZE` | How many records should be sent to Kinesis at once. Kinesis supports up to 500 records per batch. |
 | `BASE_SCHEMA_URL` | Base URL for the Platform API endpoint from which to retrieve the Avro schemas |
 | `REDSHIFT_DB_NAME` | Which Redshift database to query (either `qa` or `production`). Only used in `LOCATION_HOURS` mode. |

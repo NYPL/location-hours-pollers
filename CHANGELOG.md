@@ -1,3 +1,8 @@
+## 2025-09-03 -- v2.0.0
+### Added
+- Use new Drupal API instead of deprecated Refinery API
+- Update both the hours and alerts schemas to v2
+
 ## 2025-03-10 -- v1.0.5
 ### Fixed
 - Do not log an error when QA Refinery is down

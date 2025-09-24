@@ -1,7 +1,2 @@
-black
-freezegun
-nypl-py-utils[avro-client,kinesis-client,redshift-client,config-helper]==1.6.4
-pytest
-pytest-mock
+nypl-py-utils[avro-client,kinesis-client,redshift-client,config-helper]==1.7.0
 requests
-requests-mock

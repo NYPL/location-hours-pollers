@@ -1,0 +1,5 @@
+black
+freezegun
+pytest
+pytest-mock
+requests-mock
