@@ -168,25 +168,24 @@ def poll_location_closure_alerts(logger):
         if alert["closing_date_start"] != None:
             location_id = alert["location_codes"]
             location_name = alert["location_names"]
+            if location_id is None and alert["scope"] != "all":
+                # These are centers/divisions and can be ignored
+                continue
+
             if location_id is not None and len(location_id) != 1:
                 logger.error(
                     f"More than one location id listed for alert {alert['id']}: "
                     f"{location_id}"
                 )
                 continue
-            if location_name is not None and len(location_name) != 1:
-                logger.error(
-                    f"More than one location name listed for alert {alert['id']}: "
-                    f"{location_name}"
-                )
-                continue
+
             if alert["extended"] is None:
                 logger.warning(f"NULL 'extended' value for alert {alert['id']}")
             records.append(
                 {
                     "alert_id": alert["id"],
                     "location_id": None if location_id is None else location_id[0],
-                    "name": None if location_name is None else location_name[0],
+                    "name": None if location_name is None else ", ".join(location_name),
                     "closed_for": alert["message_plain"].strip(),
                     "extended_closing": (
                         None

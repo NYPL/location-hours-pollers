@@ -91,6 +91,7 @@ _TEST_ALERTS_API_RESPONSE = [
         "extended": "false",
         "closing_date_start": "2022-12-31T00:00:00-05:00",
         "closing_date_end": "2023-01-31T00:00:00-05:00",
+        "scope": "location",
     },
     {
         "id": "456",
@@ -100,15 +101,17 @@ _TEST_ALERTS_API_RESPONSE = [
         "extended": "True",
         "closing_date_start": "2022-12-31T00:00:00-05:00",
         "closing_date_end": "2023-01-31T00:00:00-05:00",
+        "scope": "location",
     },
     {
         "id": "789",
         "location_codes": ["libd"],
-        "location_names": ["library d"],
+        "location_names": ["library d", "library e"],
         "message_plain": "extended closure",
         "extended": "true",
         "closing_date_start": "2022-12-31T00:00:00-05:00",
         "closing_date_end": "2023-02-31T00:00:00-05:00",
+        "scope": "location",
     },
     {
         "id": "012",
@@ -118,6 +121,7 @@ _TEST_ALERTS_API_RESPONSE = [
         "extended": "false",
         "closing_date_start": "2023-01-01 00:00:00-05:00",
         "closing_date_end": "2023-01-01 23:59:59-05:00",
+        "scope": "all",
     },
 ]
 
@@ -130,6 +134,7 @@ _TEST_ALERTS_API_WARNING_RESPONSE = [
         "extended": "true",
         "closing_date_start": None,
         "closing_date_end": None,
+        "scope": "location",
     },
     {
         "id": "456",
@@ -139,15 +144,17 @@ _TEST_ALERTS_API_WARNING_RESPONSE = [
         "extended": "true",
         "closing_date_start": "2022-12-31T00:00:00-05:00",
         "closing_date_end": "2023-01-31T00:00:00-05:00",
+        "scope": "location",
     },
     {
         "id": "789",
-        "location_codes": ["liba"],
-        "location_names": ["library a", "library aa"],
+        "location_codes": None,
+        "location_names": None,
         "message_plain": "two names",
         "extended": "true",
         "closing_date_start": "2022-12-31T00:00:00-05:00",
         "closing_date_end": "2023-01-31T00:00:00-05:00",
+        "scope": "location",
     },
     {
         "id": "012",
@@ -157,6 +164,7 @@ _TEST_ALERTS_API_WARNING_RESPONSE = [
         "extended": None,
         "closing_date_start": "2022-12-31T00:00:00-05:00",
         "closing_date_end": "2023-01-31T00:00:00-05:00",
+        "scope": "location",
     },
 ]
 
@@ -192,7 +200,7 @@ _AVRO_ALERTS_INPUT = [
     {
         "alert_id": "789",
         "location_id": "libd",
-        "name": "library d",
+        "name": "library d, library e",
         "closed_for": "extended closure",
         "extended_closing": True,
         "alert_start": "2022-12-31 00:00:00-05:00",
@@ -304,10 +312,6 @@ class TestMain:
         assert (
             "More than one location id listed for alert 456: ['liba', 'libaa']"
             in caplog.text
-        )
-        assert (
-            "More than one location name listed for alert 789: ['library a', "
-            "'library aa']" in caplog.text
         )
         assert "NULL 'extended' value for alert 012" in caplog.text
         mock_avro_encoder.encode_batch.assert_called_once_with(
