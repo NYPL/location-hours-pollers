@@ -1,3 +1,8 @@
+## 2025-09-29 -- v2.0.1
+### Fixed
+- Allow for one location id with multiple names
+- Ignore divisions/centers for now
+
 ## 2025-09-03 -- v2.0.0
 ### Added
 - Use new Drupal API instead of deprecated Refinery API
