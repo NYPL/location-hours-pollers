@@ -12,7 +12,7 @@ _UPDATE_QUERY = """
     SET is_current = False
     WHERE weekday = '{weekday}'
         AND location_id IN ({stale_locations_str})
-        AND date_of_change < '{today}';"""
+        AND (date_of_change IS NULL OR date_of_change < '{today}');"""
 
 
 def build_location_hours_redshift_query(redshift_table, weekday):
