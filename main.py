@@ -68,7 +68,7 @@ def poll_location_hours(logger):
 
     logger.info("Polling Drupal for regular location hours")
     records = []
-    for location in locations_api_client.query(query_alerts=False):
+    for location in locations_api_client.query(False, "library"):
         location_id = location["attributes"]["field_ts_location_code"]
         hours_data = next(
             filter(
@@ -162,38 +162,50 @@ def poll_location_closure_alerts(logger):
     # Query the API for every alert marked as a closure and construct a record
     # for each one
     logger.info("Polling Drupal for location closure alerts")
-    records = []
     polling_datetime = datetime.now(_TIMEZONE).isoformat(sep=" ")
-    for alert in locations_api_client.query(query_alerts=True):
-        if alert["closing_date_start"] != None:
+    all_alerts = []
+    for location_type in ["all", "location"]:
+        all_alerts += locations_api_client.query(True, location_type)
+
+    records = []
+    for alert in all_alerts:
+        if (
+            alert["closing_date_start"] is not None
+            or alert["closing_date_end"] is not None
+        ):
             location_id = alert["location_codes"]
             location_name = alert["location_names"]
             if location_id is None and alert["scope"] != "all":
-                # These are centers/divisions and can be ignored
-                continue
-
-            if location_id is not None and len(location_id) != 1:
                 logger.error(
-                    f"More than one location id listed for alert {alert['id']}: "
-                    f"{location_id}"
+                    f"No location id listed for alert {alert['id']} with message: "
+                    f"{alert['message_plain']}"
                 )
                 continue
 
             if alert["extended"] is None:
                 logger.warning(f"NULL 'extended' value for alert {alert['id']}")
+                is_extended = None
+            else:
+                is_extended = alert["extended"].lower() == "true"
             records.append(
                 {
                     "alert_id": alert["id"],
-                    "location_id": None if location_id is None else location_id[0],
+                    "location_id": (
+                        None if location_id is None else ", ".join(location_id)
+                    ),
                     "name": None if location_name is None else ", ".join(location_name),
                     "closed_for": alert["message_plain"].strip(),
-                    "extended_closing": (
+                    "extended_closing": is_extended,
+                    "alert_start": (
                         None
-                        if alert["extended"] is None
-                        else alert["extended"].lower() == "true"
+                        if alert["closing_date_start"] is None
+                        else " ".join(alert["closing_date_start"].split("T"))
                     ),
-                    "alert_start": " ".join(alert["closing_date_start"].split("T")),
-                    "alert_end": " ".join(alert["closing_date_end"].split("T")),
+                    "alert_end": (
+                        None
+                        if alert["closing_date_end"] is None
+                        else " ".join(alert["closing_date_end"].split("T"))
+                    ),
                     "polling_datetime": polling_datetime,
                 }
             )

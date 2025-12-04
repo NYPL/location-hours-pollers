@@ -81,7 +81,18 @@ _TEST_HOURS_API_RESPONSE = [
         "other2": "other_field_2",
     },
 ]
-
+_TEST_ALL_ALERTS_RESPONSE = [
+    {
+        "id": "345",
+        "location_codes": None,
+        "location_names": None,
+        "message_plain": "system closure",
+        "extended": "false",
+        "closing_date_start": "2023-01-01 00:00:00-05:00",
+        "closing_date_end": "2023-01-01 23:59:59-05:00",
+        "scope": "all",
+    }
+]
 _TEST_ALERTS_API_RESPONSE = [
     {
         "id": "123",
@@ -95,12 +106,12 @@ _TEST_ALERTS_API_RESPONSE = [
     },
     {
         "id": "456",
-        "location_codes": ["libc"],
-        "location_names": ["library c"],
+        "location_codes": ["libc", "libcc"],
+        "location_names": ["library c", "library cc"],
         "message_plain": " temporary closure 2",
         "extended": "True",
         "closing_date_start": "2022-12-31T00:00:00-05:00",
-        "closing_date_end": "2023-01-31T00:00:00-05:00",
+        "closing_date_end": None,
         "scope": "location",
     },
     {
@@ -137,20 +148,10 @@ _TEST_ALERTS_API_WARNING_RESPONSE = [
         "scope": "location",
     },
     {
-        "id": "456",
-        "location_codes": ["liba", "libaa"],
-        "location_names": ["library a"],
-        "message_plain": "two codes",
-        "extended": "true",
-        "closing_date_start": "2022-12-31T00:00:00-05:00",
-        "closing_date_end": "2023-01-31T00:00:00-05:00",
-        "scope": "location",
-    },
-    {
         "id": "789",
         "location_codes": None,
         "location_names": None,
-        "message_plain": "two names",
+        "message_plain": "no names",
         "extended": "true",
         "closing_date_start": "2022-12-31T00:00:00-05:00",
         "closing_date_end": "2023-01-31T00:00:00-05:00",
@@ -178,6 +179,16 @@ _TEST_REDSHIFT_RESPONSE = [
 
 _AVRO_ALERTS_INPUT = [
     {
+        "alert_id": "345",
+        "location_id": None,
+        "name": None,
+        "closed_for": "system closure",
+        "extended_closing": False,
+        "alert_start": "2023-01-01 00:00:00-05:00",
+        "alert_end": "2023-01-01 23:59:59-05:00",
+        "polling_datetime": "2023-01-01 01:23:45-05:00",
+    },
+    {
         "alert_id": "123",
         "location_id": "libb",
         "name": "library b",
@@ -189,12 +200,12 @@ _AVRO_ALERTS_INPUT = [
     },
     {
         "alert_id": "456",
-        "location_id": "libc",
-        "name": "library c",
+        "location_id": "libc, libcc",
+        "name": "library c, library cc",
         "closed_for": "temporary closure 2",
         "extended_closing": True,
         "alert_start": "2022-12-31 00:00:00-05:00",
-        "alert_end": "2023-01-31 00:00:00-05:00",
+        "alert_end": None,
         "polling_datetime": "2023-01-01 01:23:45-05:00",
     },
     {
@@ -284,7 +295,10 @@ class TestMain:
     ):
         os.environ["MODE"] = "LOCATION_CLOSURE_ALERT"
         mock_locations_client = mocker.MagicMock()
-        mock_locations_client.query.return_value = _TEST_ALERTS_API_RESPONSE
+        mock_locations_client.query.side_effect = [
+            _TEST_ALL_ALERTS_RESPONSE,
+            _TEST_ALERTS_API_RESPONSE,
+        ]
         mocker.patch("main.LocationsApiClient", return_value=mock_locations_client)
 
         with caplog.at_level(logging.WARNING):
@@ -303,15 +317,17 @@ class TestMain:
     ):
         os.environ["MODE"] = "LOCATION_CLOSURE_ALERT"
         mock_locations_client = mocker.MagicMock()
-        mock_locations_client.query.return_value = _TEST_ALERTS_API_WARNING_RESPONSE
+        mock_locations_client.query.side_effect = [
+            [],
+            _TEST_ALERTS_API_WARNING_RESPONSE,
+        ]
         mocker.patch("main.LocationsApiClient", return_value=mock_locations_client)
 
         with caplog.at_level(logging.WARNING):
             main.main()
 
         assert (
-            "More than one location id listed for alert 456: ['liba', 'libaa']"
-            in caplog.text
+            "No location id listed for alert 789 with message: no names" in caplog.text
         )
         assert "NULL 'extended' value for alert 012" in caplog.text
         mock_avro_encoder.encode_batch.assert_called_once_with(
@@ -335,7 +351,10 @@ class TestMain:
     ):
         os.environ["MODE"] = "LOCATION_CLOSURE_ALERT"
         mock_locations_client = mocker.MagicMock()
-        mock_locations_client.query.return_value = _TEST_ALERTS_API_WARNING_RESPONSE[:1]
+        mock_locations_client.query.side_effect = [
+            [],
+            _TEST_ALERTS_API_WARNING_RESPONSE[:1],
+        ]
         mocker.patch("main.LocationsApiClient", return_value=mock_locations_client)
 
         with caplog.at_level(logging.WARNING):
@@ -373,6 +392,7 @@ class TestMain:
             main.main()
 
         assert caplog.text == ""
+        mock_locations_client.query.assert_called_once_with(False, "library")
         assert mock_redshift_client.connect.call_count == 2
         mock_redshift_client.execute_query.assert_called_once_with("REDSHIFT QUERY")
         assert mock_redshift_client.close_connection.call_count == 2

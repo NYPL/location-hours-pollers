@@ -1,3 +1,10 @@
+## 2025-12-04 -- v2.0.2
+### Added
+- Collect system-wide alerts
+
+### Fixed
+- Allow for NULL closing start/end dates (as long as one is filled)
+
 ## 2025-09-29 -- v2.0.1
 ### Fixed
 - Allow for one location id with multiple names
