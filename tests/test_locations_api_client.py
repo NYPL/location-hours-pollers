@@ -18,7 +18,9 @@ class TestLocationsApiClient:
             "https://qa-drupal.nypl.org/jsonapi/node/library",
             text=json.dumps(_TEST_API_RESPONSE),
         )
-        assert LocationsApiClient().query(False) == _TEST_API_RESPONSE["data"]
+        assert (
+            LocationsApiClient().query(False, "library") == _TEST_API_RESPONSE["data"]
+        )
         assert requests_mock.last_request.qs["page[limit]"] == ["999"]
 
     def test_query_alerts_success(self, requests_mock):
@@ -26,7 +28,9 @@ class TestLocationsApiClient:
             "https://qa-drupal.nypl.org/api/alerts/location",
             text=json.dumps(_TEST_API_RESPONSE),
         )
-        assert LocationsApiClient().query(True) == _TEST_API_RESPONSE["data"]
+        assert (
+            LocationsApiClient().query(True, "location") == _TEST_API_RESPONSE["data"]
+        )
         assert requests_mock.last_request.qs["page[limit]"] == ["999"]
 
     def test_query_request_error(self, requests_mock):
@@ -34,14 +38,14 @@ class TestLocationsApiClient:
             "https://qa-drupal.nypl.org/jsonapi/node/library", exc=ConnectTimeout
         )
         with pytest.raises(LocationsApiClientError):
-            LocationsApiClient().query(False)
+            LocationsApiClient().query(False, "library")
 
     def test_query_bad_json_error(self, requests_mock):
         requests_mock.get(
             "https://qa-drupal.nypl.org/jsonapi/node/library", text="bad json"
         )
         with pytest.raises(LocationsApiClientError):
-            LocationsApiClient().query(False)
+            LocationsApiClient().query(False, "library")
 
     def test_query_missing_key_error(self, requests_mock):
         requests_mock.get(
@@ -49,4 +53,4 @@ class TestLocationsApiClient:
             text=json.dumps({"field": "value"}),
         )
         with pytest.raises(LocationsApiClientError):
-            LocationsApiClient().query(False)
+            LocationsApiClient().query(False, "library")

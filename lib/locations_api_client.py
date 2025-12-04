@@ -6,8 +6,8 @@ from nypl_py_utils.functions.log_helper import create_log
 from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import JSONDecodeError
 
-_ALERTS_URL = "drupal.nypl.org/api/alerts/location"
-_LOCATIONS_URL = "drupal.nypl.org/jsonapi/node/library"
+_ALERTS_URL = "drupal.nypl.org/api/alerts/"
+_LOCATIONS_URL = "drupal.nypl.org/jsonapi/node/"
 
 
 class LocationsApiClient:
@@ -22,9 +22,9 @@ class LocationsApiClient:
         self.session = requests.Session()
         self.session.mount("https://", HTTPAdapter(max_retries=retry_policy))
 
-    def query(self, query_alerts):
+    def query(self, query_alerts, location_type=None):
         try:
-            url = _ALERTS_URL if query_alerts else _LOCATIONS_URL
+            url = (_ALERTS_URL if query_alerts else _LOCATIONS_URL) + location_type
             if os.environ["ENVIRONMENT"] != "production":
                 url = "qa-" + url
             url = "https://" + url
