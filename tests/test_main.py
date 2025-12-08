@@ -116,7 +116,7 @@ _TEST_ALERTS_API_RESPONSE = [
     },
     {
         "id": "789",
-        "location_codes": ["libd"],
+        "location_codes": ["libd", "fake"],
         "location_names": ["library d", "library e"],
         "message_plain": "extended closure",
         "extended": "true",
@@ -167,6 +167,16 @@ _TEST_ALERTS_API_WARNING_RESPONSE = [
         "closing_date_end": "2023-01-31T00:00:00-05:00",
         "scope": "location",
     },
+    {
+        "id": "678",
+        "location_codes": ["fake"],
+        "location_names": ["fake name"],
+        "message_plain": "unknown lib",
+        "extended": "false",
+        "closing_date_start": "2022-12-31T00:00:00-05:00",
+        "closing_date_end": "2023-01-31T00:00:00-05:00",
+        "scope": "location",
+    },
 ]
 
 _TEST_REDSHIFT_RESPONSE = [
@@ -176,6 +186,8 @@ _TEST_REDSHIFT_RESPONSE = [
     ("libd", time(19, 0), time(20, 0)),
     ("libe", time(20, 0), time(21, 0)),
 ]
+
+_KNOWN_LIBRARIES_RESPONSE = (["liba"], ["libb"], ["libc"], ["libcc"], ["libd"])
 
 _AVRO_ALERTS_INPUT = [
     {
@@ -286,12 +298,17 @@ class TestMain:
     @pytest.fixture
     def mock_redshift_client(self, mocker):
         mock_redshift_client = mocker.MagicMock()
-        mock_redshift_client.execute_query.return_value = _TEST_REDSHIFT_RESPONSE
         mocker.patch("main.RedshiftClient", return_value=mock_redshift_client)
         return mock_redshift_client
 
     def test_poll_location_closure_alerts(
-        self, test_instance, mock_avro_encoder, mock_kinesis_client, mocker, caplog
+        self,
+        test_instance,
+        mock_avro_encoder,
+        mock_kinesis_client,
+        mock_redshift_client,
+        mocker,
+        caplog,
     ):
         os.environ["MODE"] = "LOCATION_CLOSURE_ALERT"
         mock_locations_client = mocker.MagicMock()
@@ -300,6 +317,7 @@ class TestMain:
             _TEST_ALERTS_API_RESPONSE,
         ]
         mocker.patch("main.LocationsApiClient", return_value=mock_locations_client)
+        mock_redshift_client.execute_query.return_value = _KNOWN_LIBRARIES_RESPONSE
 
         with caplog.at_level(logging.WARNING):
             main.main()
@@ -313,7 +331,13 @@ class TestMain:
         del os.environ["MODE"]
 
     def test_poll_location_closure_alerts_with_warnings(
-        self, test_instance, mock_avro_encoder, mock_kinesis_client, mocker, caplog
+        self,
+        test_instance,
+        mock_avro_encoder,
+        mock_kinesis_client,
+        mock_redshift_client,
+        mocker,
+        caplog,
     ):
         os.environ["MODE"] = "LOCATION_CLOSURE_ALERT"
         mock_locations_client = mocker.MagicMock()
@@ -322,12 +346,18 @@ class TestMain:
             _TEST_ALERTS_API_WARNING_RESPONSE,
         ]
         mocker.patch("main.LocationsApiClient", return_value=mock_locations_client)
+        mock_redshift_client.execute_query.return_value = _KNOWN_LIBRARIES_RESPONSE
 
         with caplog.at_level(logging.WARNING):
             main.main()
 
         assert (
-            "No location id listed for alert 789 with message: no names" in caplog.text
+            "No or unknown location id listed for alert 789 with message: no names"
+            in caplog.text
+        )
+        assert (
+            "No or unknown location id listed for alert 678 with message: unknown lib"
+            in caplog.text
         )
         assert "NULL 'extended' value for alert 012" in caplog.text
         mock_avro_encoder.encode_batch.assert_called_once_with(
@@ -347,7 +377,13 @@ class TestMain:
         del os.environ["MODE"]
 
     def test_poll_location_closure_alerts_empty(
-        self, test_instance, mock_avro_encoder, mock_kinesis_client, mocker, caplog
+        self,
+        test_instance,
+        mock_avro_encoder,
+        mock_kinesis_client,
+        mock_redshift_client,
+        mocker,
+        caplog,
     ):
         os.environ["MODE"] = "LOCATION_CLOSURE_ALERT"
         mock_locations_client = mocker.MagicMock()
@@ -356,6 +392,7 @@ class TestMain:
             _TEST_ALERTS_API_WARNING_RESPONSE[:1],
         ]
         mocker.patch("main.LocationsApiClient", return_value=mock_locations_client)
+        mock_redshift_client.execute_query.return_value = _KNOWN_LIBRARIES_RESPONSE
 
         with caplog.at_level(logging.WARNING):
             main.main()
@@ -384,6 +421,7 @@ class TestMain:
         mock_locations_client = mocker.MagicMock()
         mock_locations_client.query.return_value = _TEST_HOURS_API_RESPONSE
         mocker.patch("main.LocationsApiClient", return_value=mock_locations_client)
+        mock_redshift_client.execute_query.return_value = _TEST_REDSHIFT_RESPONSE
         mock_update_builder = mocker.patch(
             "main.build_update_query", return_value="UPDATE QUERY"
         )
@@ -440,6 +478,7 @@ class TestMain:
             }
         ]
         mocker.patch("main.LocationsApiClient", return_value=mock_locations_client)
+        mock_redshift_client.execute_query.return_value = _TEST_REDSHIFT_RESPONSE
 
         with caplog.at_level(logging.WARNING):
             main.main()
@@ -499,6 +538,7 @@ class TestMain:
             }
         ] + _TEST_HOURS_API_RESPONSE
         mocker.patch("main.LocationsApiClient", return_value=mock_locations_client)
+        mock_redshift_client.execute_query.return_value = _TEST_REDSHIFT_RESPONSE
 
         with caplog.at_level(logging.WARNING):
             main.main()
@@ -512,16 +552,18 @@ class TestMain:
         del os.environ["MODE"]
 
     def test_poll_location_hours_all_closed(
-        self, test_instance, mock_avro_encoder, mock_kinesis_client, mocker
+        self,
+        test_instance,
+        mock_avro_encoder,
+        mock_kinesis_client,
+        mock_redshift_client,
+        mocker,
     ):
         os.environ["MODE"] = "LOCATION_HOURS"
         mock_locations_client = mocker.MagicMock()
         mock_locations_client.query.return_value = _TEST_HOURS_API_RESPONSE[-1:]
         mocker.patch("main.LocationsApiClient", return_value=mock_locations_client)
-
-        mock_redshift_client = mocker.MagicMock()
         mock_redshift_client.execute_query.return_value = [("libd", None, None)]
-        mocker.patch("main.RedshiftClient", return_value=mock_redshift_client)
 
         main.main()
 
@@ -530,7 +572,7 @@ class TestMain:
         mock_redshift_client.execute_transaction.assert_not_called()
         del os.environ["MODE"]
 
-    def test_unknown_mode(self, test_instance):
+    def test_unknown_mode(self, test_instance, mock_redshift_client):
         os.environ["MODE"] = "fake-mode"
         with pytest.raises(main.LocationHoursPipelineError):
             main.main()

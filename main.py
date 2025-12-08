@@ -3,7 +3,11 @@ import pytz
 
 from datetime import datetime
 from lib import LocationsApiClient
-from lib.query_helper import build_location_hours_redshift_query, build_update_query
+from lib.query_helper import (
+    build_branch_codes_query,
+    build_location_hours_redshift_query,
+    build_update_query,
+)
 from nypl_py_utils.classes.avro_client import AvroEncoder
 from nypl_py_utils.classes.kinesis_client import KinesisClient
 from nypl_py_utils.classes.redshift_client import RedshiftClient
@@ -17,10 +21,16 @@ def main():
     load_env_file(os.environ["ENVIRONMENT"], "config/{}.yaml")
     logger = create_log(__name__)
 
+    redshift_client = RedshiftClient(
+        os.environ["REDSHIFT_DB_HOST"],
+        os.environ["REDSHIFT_DB_NAME"],
+        os.environ["REDSHIFT_DB_USER"],
+        os.environ["REDSHIFT_DB_PASSWORD"],
+    )
     if os.environ["MODE"] == "LOCATION_HOURS":
-        poll_location_hours(logger)
+        poll_location_hours(redshift_client, logger)
     elif os.environ["MODE"] == "LOCATION_CLOSURE_ALERT":
-        poll_location_closure_alerts(logger)
+        poll_location_closure_alerts(redshift_client, logger)
     else:
         logger.error("Mode not recognized: {}".format(os.environ["MODE"]))
         raise LocationHoursPipelineError(
@@ -28,7 +38,7 @@ def main():
         ) from None
 
 
-def poll_location_hours(logger):
+def poll_location_hours(redshift_client, logger):
     today = datetime.now(_TIMEZONE).date()
     weekday = today.strftime("%A")
     locations_api_client = LocationsApiClient()
@@ -39,12 +49,6 @@ def poll_location_hours(logger):
 
     # Query Redshift for all of the currently stored regular hours for today's
     # day of the week
-    redshift_client = RedshiftClient(
-        os.environ["REDSHIFT_DB_HOST"],
-        os.environ["REDSHIFT_DB_NAME"],
-        os.environ["REDSHIFT_DB_USER"],
-        os.environ["REDSHIFT_DB_PASSWORD"],
-    )
     redshift_table = "location_hours_v2"
     if os.environ["REDSHIFT_DB_NAME"] != "production":
         redshift_table += "_" + os.environ["REDSHIFT_DB_NAME"]
@@ -151,13 +155,24 @@ def poll_location_hours(logger):
     logger.info("Finished location hours poll")
 
 
-def poll_location_closure_alerts(logger):
+def poll_location_closure_alerts(redshift_client, logger):
     locations_api_client = LocationsApiClient()
     avro_encoder = AvroEncoder(os.environ["BASE_SCHEMA_URL"] + "LocationClosureAlertV2")
     kinesis_client = KinesisClient(
         os.environ["CLOSURE_ALERT_KINESIS_STREAM_ARN"],
         int(os.environ["KINESIS_BATCH_SIZE"]),
     )
+
+    # Query Redshift for list of known location ids
+    redshift_table = "branch_codes_map"
+    if os.environ["REDSHIFT_DB_NAME"] != "production":
+        redshift_table += "_" + os.environ["REDSHIFT_DB_NAME"]
+    redshift_client.connect()
+    raw_redshift_data = redshift_client.execute_query(
+        build_branch_codes_query(redshift_table)
+    )
+    redshift_client.close_connection()
+    known_locations = {row[0] for row in raw_redshift_data}
 
     # Query the API for every alert marked as a closure and construct a record
     # for each one
@@ -174,11 +189,12 @@ def poll_location_closure_alerts(logger):
             or alert["closing_date_end"] is not None
         ):
             location_id = alert["location_codes"]
-            location_name = alert["location_names"]
-            if location_id is None and alert["scope"] != "all":
+            if location_id is not None:
+                location_id = [l for l in location_id if l in known_locations]
+            if alert["scope"] != "all" and not location_id:
                 logger.error(
-                    f"No location id listed for alert {alert['id']} with message: "
-                    f"{alert['message_plain']}"
+                    f"No or unknown location id listed for alert {alert['id']} with "
+                    f"message: {alert['message_plain']}"
                 )
                 continue
 
@@ -193,7 +209,11 @@ def poll_location_closure_alerts(logger):
                     "location_id": (
                         None if location_id is None else ", ".join(location_id)
                     ),
-                    "name": None if location_name is None else ", ".join(location_name),
+                    "name": (
+                        None
+                        if alert["location_names"] is None
+                        else ", ".join(alert["location_names"])
+                    ),
                     "closed_for": alert["message_plain"].strip(),
                     "extended_closing": is_extended,
                     "alert_start": (

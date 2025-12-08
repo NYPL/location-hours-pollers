@@ -1,3 +1,7 @@
+## 2025-12-08 -- v2.0.3
+### Fixed
+- Ignore unknown location ids
+
 ## 2025-12-04 -- v2.0.2
 ### Added
 - Collect system-wide alerts
