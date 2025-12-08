@@ -279,7 +279,11 @@ class TestMain:
     def test_instance(self, mocker):
         mocker.patch("main.load_env_file")
         mocker.patch(
-            "main.build_location_hours_redshift_query", return_value="REDSHIFT QUERY"
+            "main.build_location_hours_redshift_query",
+            return_value="REDSHIFT HOURS QUERY",
+        )
+        mocker.patch(
+            "main.build_branch_codes_query", return_value="REDSHIFT BRANCH QUERY"
         )
 
     @pytest.fixture
@@ -323,6 +327,11 @@ class TestMain:
             main.main()
 
         assert caplog.text == ""
+        mock_redshift_client.connect.assert_called_once()
+        mock_redshift_client.execute_query.assert_called_once_with(
+            "REDSHIFT BRANCH QUERY"
+        )
+        mock_redshift_client.close_connection.assert_called_once()
         mock_avro_encoder.encode_batch.assert_called_once_with(_AVRO_ALERTS_INPUT)
         mock_kinesis_client.send_records.assert_called_once_with(
             [b"1", b"2", b"3", b"4"]
@@ -432,7 +441,9 @@ class TestMain:
         assert caplog.text == ""
         mock_locations_client.query.assert_called_once_with(False, "library")
         assert mock_redshift_client.connect.call_count == 2
-        mock_redshift_client.execute_query.assert_called_once_with("REDSHIFT QUERY")
+        mock_redshift_client.execute_query.assert_called_once_with(
+            "REDSHIFT HOURS QUERY"
+        )
         assert mock_redshift_client.close_connection.call_count == 2
         mock_update_builder.assert_called_once_with(
             "location_hours_v2_test_redshift_name",
