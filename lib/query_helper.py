@@ -1,3 +1,5 @@
+_BRANCH_CODES_QUERY = "SELECT sierra_code FROM {redshift_table};"
+
 _LOCATION_HOURS_REDSHIFT_QUERY = """
     SELECT
         {redshift_table}.location_id,
@@ -13,6 +15,10 @@ _UPDATE_QUERY = """
     WHERE weekday = '{weekday}'
         AND location_id IN ({stale_locations_str})
         AND (date_of_change IS NULL OR date_of_change < '{today}');"""
+
+
+def build_branch_codes_query(redshift_table):
+    return _BRANCH_CODES_QUERY.format(redshift_table=redshift_table)
 
 
 def build_location_hours_redshift_query(redshift_table, weekday):
