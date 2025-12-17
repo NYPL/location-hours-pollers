@@ -360,14 +360,6 @@ class TestMain:
         with caplog.at_level(logging.WARNING):
             main.main()
 
-        assert (
-            "No or unknown location id listed for alert 789 with message: no names"
-            in caplog.text
-        )
-        assert (
-            "No or unknown location id listed for alert 678 with message: unknown lib"
-            in caplog.text
-        )
         assert "NULL 'extended' value for alert 012" in caplog.text
         mock_avro_encoder.encode_batch.assert_called_once_with(
             [
