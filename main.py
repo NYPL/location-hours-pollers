@@ -192,9 +192,10 @@ def poll_location_closure_alerts(redshift_client, logger):
             if location_id is not None:
                 location_id = [l for l in location_id if l in known_locations]
             if alert["scope"] != "all" and not location_id:
-                logger.error(
+                logger.info(
                     f"No or unknown location id listed for alert {alert['id']} with "
-                    f"message: {alert['message_plain']}"
+                    f"location: {alert['location_codes']} and message: "
+                    f"{alert['message_plain']}"
                 )
                 continue
 
