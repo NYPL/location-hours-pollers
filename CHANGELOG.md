@@ -1,3 +1,8 @@
+## 2026-01-15 -- v2.1.0
+### Fixed
+- Filter out names corresponding to unknown location ids
+- Output one row per location id rather than concatenating the ids
+
 ## 2025-12-08 -- v2.0.3
 ### Fixed
 - Ignore unknown location ids

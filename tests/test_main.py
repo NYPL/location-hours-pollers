@@ -117,22 +117,12 @@ _TEST_ALERTS_API_RESPONSE = [
     {
         "id": "789",
         "location_codes": ["libd", "fake"],
-        "location_names": ["library d", "library e"],
+        "location_names": ["library d", "library fake"],
         "message_plain": "extended closure",
         "extended": "true",
         "closing_date_start": "2022-12-31T00:00:00-05:00",
         "closing_date_end": "2023-02-31T00:00:00-05:00",
         "scope": "location",
-    },
-    {
-        "id": "012",
-        "location_codes": None,
-        "location_names": None,
-        "message_plain": "system closure",
-        "extended": "false",
-        "closing_date_start": "2023-01-01 00:00:00-05:00",
-        "closing_date_end": "2023-01-01 23:59:59-05:00",
-        "scope": "all",
     },
 ]
 
@@ -177,6 +167,16 @@ _TEST_ALERTS_API_WARNING_RESPONSE = [
         "closing_date_end": "2023-01-31T00:00:00-05:00",
         "scope": "location",
     },
+    {
+        "id": "910",
+        "location_codes": ["liba"],
+        "location_names": ["library a", "library b"],
+        "message_plain": "multiple names",
+        "extended": "false",
+        "closing_date_start": "2022-12-31T00:00:00-05:00",
+        "closing_date_end": "2023-01-31T00:00:00-05:00",
+        "scope": "location",
+    },
 ]
 
 _TEST_REDSHIFT_RESPONSE = [
@@ -212,8 +212,18 @@ _AVRO_ALERTS_INPUT = [
     },
     {
         "alert_id": "456",
-        "location_id": "libc, libcc",
-        "name": "library c, library cc",
+        "location_id": "libc",
+        "name": "library c",
+        "closed_for": "temporary closure 2",
+        "extended_closing": True,
+        "alert_start": "2022-12-31 00:00:00-05:00",
+        "alert_end": None,
+        "polling_datetime": "2023-01-01 01:23:45-05:00",
+    },
+    {
+        "alert_id": "456",
+        "location_id": "libcc",
+        "name": "library cc",
         "closed_for": "temporary closure 2",
         "extended_closing": True,
         "alert_start": "2022-12-31 00:00:00-05:00",
@@ -223,21 +233,11 @@ _AVRO_ALERTS_INPUT = [
     {
         "alert_id": "789",
         "location_id": "libd",
-        "name": "library d, library e",
+        "name": "library d",
         "closed_for": "extended closure",
         "extended_closing": True,
         "alert_start": "2022-12-31 00:00:00-05:00",
         "alert_end": "2023-02-31 00:00:00-05:00",
-        "polling_datetime": "2023-01-01 01:23:45-05:00",
-    },
-    {
-        "alert_id": "012",
-        "location_id": None,
-        "name": None,
-        "closed_for": "system closure",
-        "extended_closing": False,
-        "alert_start": "2023-01-01 00:00:00-05:00",
-        "alert_end": "2023-01-01 23:59:59-05:00",
         "polling_datetime": "2023-01-01 01:23:45-05:00",
     },
 ]
@@ -361,6 +361,9 @@ class TestMain:
             main.main()
 
         assert "NULL 'extended' value for alert 012" in caplog.text
+        assert (
+            "Differing numbers of location codes and names for alert 910" in caplog.text
+        )
         mock_avro_encoder.encode_batch.assert_called_once_with(
             [
                 {
@@ -402,7 +405,7 @@ class TestMain:
         mock_avro_encoder.encode_batch.assert_called_once_with(
             [
                 {
-                    "drupal_location_id": "location_closure_alert_poller",
+                    "location_id": "location_closure_alert_poller",
                     "polling_datetime": "2023-01-01 01:23:45-05:00",
                 }
             ]
