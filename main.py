@@ -172,7 +172,7 @@ def poll_location_closure_alerts(redshift_client, logger):
         build_branch_codes_query(redshift_table)
     )
     redshift_client.close_connection()
-    known_locations = {row[0] for row in raw_redshift_data}
+    all_known_locations = {row[0] for row in raw_redshift_data}
 
     # Query the API for every alert marked as a closure and construct a record
     # for each one
@@ -188,10 +188,32 @@ def poll_location_closure_alerts(redshift_client, logger):
             alert["closing_date_start"] is not None
             or alert["closing_date_end"] is not None
         ):
-            location_id = alert["location_codes"]
-            if location_id is not None:
-                location_id = [l for l in location_id if l in known_locations]
-            if alert["scope"] != "all" and not location_id:
+            raw_location_ids = (
+                [None] if alert["location_codes"] is None else alert["location_codes"]
+            )
+            raw_location_names = (
+                [None] if alert["location_names"] is None else alert["location_names"]
+            )
+            if len(raw_location_ids) != len(raw_location_names):
+                logger.error(
+                    "Differing numbers of location codes and names for alert "
+                    f"{alert['id']}: {alert['location_codes']} versus "
+                    f"{alert['location_names']}"
+                )
+                continue
+
+            # Filter out unknown locations -- usually centers/divisions -- which we
+            # choose not to track to avoid duplicate closures
+            known_location_ids = []
+            known_location_names = []
+            for i in range(len(raw_location_ids)):
+                loc_id = raw_location_ids[i]
+                if loc_id is None or loc_id in all_known_locations:
+                    known_location_ids.append(loc_id)
+                    known_location_names.append(raw_location_names[i])
+            if alert["scope"] != "all" and (
+                not known_location_ids or known_location_ids == [None]
+            ):
                 logger.info(
                     f"No or unknown location id listed for alert {alert['id']} with "
                     f"location: {alert['location_codes']} and message: "
@@ -204,39 +226,35 @@ def poll_location_closure_alerts(redshift_client, logger):
                 is_extended = None
             else:
                 is_extended = alert["extended"].lower() == "true"
-            records.append(
-                {
-                    "alert_id": alert["id"],
-                    "location_id": (
-                        None if location_id is None else ", ".join(location_id)
-                    ),
-                    "name": (
-                        None
-                        if alert["location_names"] is None
-                        else ", ".join(alert["location_names"])
-                    ),
-                    "closed_for": alert["message_plain"].strip(),
-                    "extended_closing": is_extended,
-                    "alert_start": (
-                        None
-                        if alert["closing_date_start"] is None
-                        else " ".join(alert["closing_date_start"].split("T"))
-                    ),
-                    "alert_end": (
-                        None
-                        if alert["closing_date_end"] is None
-                        else " ".join(alert["closing_date_end"].split("T"))
-                    ),
-                    "polling_datetime": polling_datetime,
-                }
-            )
+
+            for i in range(len(known_location_ids)):
+                records.append(
+                    {
+                        "alert_id": alert["id"],
+                        "location_id": known_location_ids[i],
+                        "name": known_location_names[i],
+                        "closed_for": alert["message_plain"].strip(),
+                        "extended_closing": is_extended,
+                        "alert_start": (
+                            None
+                            if alert["closing_date_start"] is None
+                            else " ".join(alert["closing_date_start"].split("T"))
+                        ),
+                        "alert_end": (
+                            None
+                            if alert["closing_date_end"] is None
+                            else " ".join(alert["closing_date_end"].split("T"))
+                        ),
+                        "polling_datetime": polling_datetime,
+                    }
+                )
 
     # If there are no alerts, still record the datetime of the polling, as it
     # may still be required by the LocationClosureAggregator
     if len(records) == 0:
         records.append(
             {
-                "drupal_location_id": "location_closure_alert_poller",
+                "location_id": "location_closure_alert_poller",
                 "polling_datetime": polling_datetime,
             }
         )
