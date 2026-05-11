@@ -1,2 +1,2 @@
-nypl-py-utils[avro-client,kinesis-client,redshift-client,config-helper]==1.7.0
+nypl-py-utils[avro-client,kinesis-client,redshift-client,config-helper]==1.11.0
 requests
